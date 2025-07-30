@@ -1,0 +1,25 @@
+---
+alwaysApply: true
+---
+1. Bug Fixes:
+   - Analyze the problem thoroughly before suggesting fixes
+   - Provide precise, targeted solutions
+   - Explain the root cause of the bug
+
+2. Keep It Simple:
+   - Prioritize readability and maintainability
+   - Avoid over-engineering solutions
+   - Use standard libraries and patterns when possible
+
+3. Code Changes:
+   - Propose a clear plan before making changes
+   - Apply all modifications to a single file at once
+   - Do not alter unrelated files
+
+Remember to always consider the context and specific requirements of each project.
+
+Always respond in 中文
+
+如果改到涉及用法改动请同时更新用法到README.md
+
+每次改动代码后都检测代码语法扫描是否有问题
