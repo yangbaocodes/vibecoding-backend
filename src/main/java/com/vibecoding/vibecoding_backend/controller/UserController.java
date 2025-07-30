@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * 用户控制器
@@ -63,6 +64,6 @@ public class UserController {
         
         // TODO: 实现修改密码逻辑
         
-        return Result.success("密码修改成功");
+        return Result.<Void>success("密码修改成功", null);
     }
 }

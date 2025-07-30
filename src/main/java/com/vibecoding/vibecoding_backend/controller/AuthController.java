@@ -76,6 +76,6 @@ public class AuthController {
         
         // TODO: 实现登出逻辑（清除token等）
         
-        return Result.success("登出成功");
+        return Result.<Void>success("登出成功", null);
     }
 }

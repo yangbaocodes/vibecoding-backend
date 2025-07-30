@@ -1,6 +1,5 @@
 package com.vibecoding.vibecoding_backend.common;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -9,7 +8,6 @@ import lombok.Getter;
  * @author VibeCode Team
  */
 @Getter
-@AllArgsConstructor
 public enum ResultCode {
     
     // 通用状态码
@@ -48,4 +46,9 @@ public enum ResultCode {
     
     private final Integer code;
     private final String message;
+    
+    ResultCode(Integer code, String message) {
+        this.code = code;
+        this.message = message;
+    }
 }
