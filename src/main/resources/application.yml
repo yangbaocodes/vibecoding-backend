@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8081
   servlet:
     context-path: /api
 
@@ -13,9 +13,9 @@ spring:
   # 数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/vibecoding?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    url: jdbc:mysql://45.192.104.100:3306/vibecoding?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
     username: root
-    password: 123456
+    password: mysql_xPDZKR
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
       minimum-idle: 5
@@ -30,9 +30,9 @@ spring:
   # Redis配置
   data:
     redis:
-      host: localhost
+      host: 45.192.104.100
       port: 6379
-      password: 
+      password: redis_ZfJsEw
       database: 0
       timeout: 6000ms
       jedis:
@@ -44,17 +44,19 @@ spring:
   
   # 邮件配置
   mail:
-    host: smtp.qq.com
-    port: 587
-    username: your-email@qq.com
-    password: your-email-password
+    host: smtp.163.com
+    port: 465
+    username: duoqin@163.com
+    password: KSsRsVhigbvkcBW9
     properties:
       mail:
         smtp:
           auth: true
-          starttls:
+          ssl:
             enable: true
-            required: true
+          socketFactory:
+            port: 465
+            class: javax.net.ssl.SSLSocketFactory
   
   # 文件上传配置
   servlet:
@@ -153,6 +155,9 @@ spring:
 
   data:
     redis:
+      host: 45.192.104.100
+      port: 6379
+      password: redis_ZfJsEw
       database: 0
 
 logging:

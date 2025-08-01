@@ -43,6 +43,7 @@ public class SecurityConfig {
                 // 允许访问的接口
                 .requestMatchers(
                     "/auth/**",
+                    "/user/send-verification-code",
                     "/system/health",
                     "/system/config",
                     "/file/download/**",
