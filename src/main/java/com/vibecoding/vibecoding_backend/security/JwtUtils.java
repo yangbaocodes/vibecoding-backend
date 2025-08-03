@@ -20,10 +20,10 @@ import java.util.Map;
 @Component
 public class JwtUtils {
 
-    @Value("${jwt.secret:vibecoding-secret-key}")
+    @Value("${app.jwt.secret:vibecoding-secret-key}")
     private String secret;
 
-    @Value("${jwt.expiration:86400}")
+    @Value("${app.jwt.expiration:86400}")
     private long expiration;
 
     /**

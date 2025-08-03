@@ -23,7 +23,7 @@ public class UserServiceTest {
     @Test
     public void testCreateUser() {
         // 测试创建用户
-        String email = "test@example.com";
+        String email = "test" + System.currentTimeMillis() + "@example.com";
         String nickname = "测试用户";
         
         User user = userService.createUser(email, nickname);

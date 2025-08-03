@@ -50,6 +50,7 @@ public class UserService {
         user.setNickname(nickname != null ? nickname : "用户" + System.currentTimeMillis());
         user.setRole("USER");
         user.setStatus(1);
+        user.setPassword(""); // 设置空密码，因为使用验证码登录
         user.setCreateTime(LocalDateTime.now());
         user.setUpdateTime(LocalDateTime.now());
         user.setDeleted(0);

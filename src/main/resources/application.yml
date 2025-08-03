@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 8080
   servlet:
     context-path: /api
 
@@ -120,7 +120,7 @@ logging:
 # 应用自定义配置
 app:
   jwt:
-    secret: vibecoding-jwt-secret-key-2024
+    secret: vibecoding-jwt-secret-key-202406-very-long-and-secure-key-for-production-use-at-least-256-bits
     expiration: 86400000 # 24小时
   
   file:
@@ -149,9 +149,9 @@ spring:
       on-profile: dev
       
   datasource:
-    url: jdbc:mysql://localhost:3306/vibecoding_dev?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
+    url: jdbc:mysql://45.192.104.100:3306/vibecoding_dev?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8
     username: root
-    password: 123456
+    password: mysql_xPDZKR
 
   data:
     redis:
