@@ -23,7 +23,7 @@ public class JwtUtils {
     @Value("${app.jwt.secret:vibecoding-secret-key}")
     private String secret;
 
-    @Value("${app.jwt.expiration:86400}")
+    @Value("${app.jwt.expiration:86400000}")
     private long expiration;
 
     /**
@@ -44,7 +44,7 @@ public class JwtUtils {
                 .setClaims(claims)
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration * 1000))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
