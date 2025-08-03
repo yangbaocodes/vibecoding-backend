@@ -126,19 +126,81 @@ spring:
 java -jar target/vibecoding-backend-0.0.1-SNAPSHOT.jar
 ```
 
-项目启动后访问：http://localhost:8080/api
+项目启动后访问：http://localhost:8081/api
 
 ## 📋 API 接口
 
 ### 认证相关
-- `POST /api/auth/login` - 用户登录
-- `POST /api/auth/register` - 用户注册  
+- `POST /api/auth/send-verification-code` - 发送邮箱验证码
+- `POST /api/auth/login-or-register` - 统一的注册/登录接口
 - `POST /api/auth/logout` - 用户登出
 
 ### 用户相关
 - `GET /api/user/info` - 获取用户信息
 - `PUT /api/user/info` - 更新用户信息
 - `PUT /api/user/password` - 修改密码
+
+### 邮箱验证码功能
+
+#### 发送验证码
+**接口**: `POST /api/auth/send-verification-code`
+
+**请求参数**:
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "验证码发送成功",
+  "data": null,
+  "timestamp": 1640995200000
+}
+```
+
+#### 注册/登录
+**接口**: `POST /api/auth/login-or-register`
+
+**请求参数**:
+```json
+{
+  "email": "user@example.com",
+  "verificationCode": "123456"
+}
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "登录成功",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiJ9...",
+    "isNewUser": false,
+    "user": {
+      "id": 1,
+      "username": "user",
+      "email": "user@example.com",
+      "nickname": "测试用户",
+      "role": "USER",
+      "status": 1
+    }
+  },
+  "timestamp": 1640995200000
+}
+```
+
+**功能说明**:
+- 验证码为6位纯数字
+- 验证码有效期为5分钟
+- 验证码存储在Redis中，键格式：`email:verification:{email}`
+- 使用163邮箱服务器发送邮件
+- 如果用户不存在则自动注册，如果存在则登录
+- 登录状态使用JWT Bearer Token实现
 
 ### 系统相关
 - `GET /api/system/health` - 健康检查
@@ -171,6 +233,7 @@ Redis 键命名规范：
 - 用户token：`user:token:{userId}`
 - 用户信息：`user:info:{userId}`
 - 系统配置：`system:config:{key}`
+- 邮箱验证码：`email:verification:{email}` (5分钟过期)
 
 ### 异常处理
 

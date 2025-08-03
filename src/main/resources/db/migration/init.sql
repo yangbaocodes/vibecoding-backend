@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS `sys_user` (
     `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '用户ID',
     `username` VARCHAR(50) NOT NULL COMMENT '用户名',
     `email` VARCHAR(100) NOT NULL COMMENT '邮箱',
-    `password` VARCHAR(100) NOT NULL COMMENT '密码',
+    `password` VARCHAR(100) DEFAULT NULL COMMENT '密码（已废弃，使用验证码登录）',
     `nickname` VARCHAR(50) DEFAULT NULL COMMENT '昵称',
     `avatar` VARCHAR(255) DEFAULT NULL COMMENT '头像',
     `role` VARCHAR(50) DEFAULT 'USER' COMMENT '角色',

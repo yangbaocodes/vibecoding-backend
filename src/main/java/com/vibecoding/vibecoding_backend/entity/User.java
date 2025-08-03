@@ -37,7 +37,7 @@ public class User {
     private String email;
 
     /**
-     * 密码
+     * 密码（已废弃，使用验证码登录）
      */
     @TableField("password")
     private String password;
