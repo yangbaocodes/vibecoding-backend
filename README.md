@@ -39,23 +39,29 @@ backend/
 │   ├── controller/                          # 控制器层
 │   │   ├── AuthController.java              # 认证控制器
 │   │   ├── SystemController.java            # 系统控制器
-│   │   └── UserController.java              # 用户控制器
+│   │   ├── UserController.java              # 用户控制器
+│   │   └── FileController.java              # 文件控制器
 │   ├── dto/                                 # 数据传输对象
 │   │   ├── LoginRequest.java                # 登录请求DTO
 │   │   ├── RegisterRequest.java             # 注册请求DTO
 │   │   └── UserInfoResponse.java            # 用户信息响应DTO
 │   ├── entity/                              # 实体类
-│   │   └── User.java                        # 用户实体
+│   │   ├── User.java                        # 用户实体
+│   │   └── FileInfo.java                    # 文件信息实体
 │   ├── exception/                           # 异常处理
 │   │   ├── BusinessException.java           # 业务异常
 │   │   └── GlobalExceptionHandler.java      # 全局异常处理器
 │   ├── mapper/                              # MyBatis映射器
+│   │   ├── UserMapper.java                   # 用户映射器
+│   │   └── FileInfoMapper.java               # 文件信息映射器
 │   ├── security/                            # 安全相关
 │   │   ├── JwtAccessDeniedHandler.java      # JWT访问拒绝处理器
 │   │   ├── JwtAuthenticationEntryPoint.java # JWT认证入口点
 │   │   └── SecurityConfig.java              # Spring Security配置
 │   ├── service/                             # 服务层
-│   │   └── impl/                            # 服务实现
+│   │   ├── UserService.java                  # 用户服务
+│   │   ├── EmailService.java                 # 邮件服务
+│   │   └── FileService.java                  # 文件服务
 │   └── util/                                # 工具类
 │       └── JwtUtils.java                    # JWT工具类
 ├── src/main/resources/
@@ -207,8 +213,29 @@ java -jar target/vibecoding-backend-0.0.1-SNAPSHOT.jar
 - `GET /api/system/config` - 获取系统配置
 
 ### 文件相关
-- `POST /api/file/upload` - 文件上传
-- `GET /api/file/download/{fileId}` - 文件下载
+
+#### 文件上传
+- **接口**: `POST /api/file/upload`
+- **参数**: `files` (MultipartFile数组，最多10个文件)
+- **支持格式**: docx、pdf
+- **返回**: JSON数组，包含filename和file_url
+- **示例**:
+```bash
+curl -X POST http://localhost:8080/api/file/upload \
+  -H "Authorization: Bearer <token>" \
+  -F "files=@document1.docx" \
+  -F "files=@document2.pdf"
+```
+
+#### 文件下载
+- **接口**: `GET /api/file/files/{path}/{filename}`
+- **参数**: path (路径), filename (文件名)
+- **认证**: 无需token验证
+- **返回**: 文件流，浏览器自动下载
+- **示例**:
+```bash
+curl -O http://localhost:8080/api/file/files/filesource/uuid-filename.docx
+```
 
 ## 🔧 开发指南
 
@@ -217,7 +244,7 @@ java -jar target/vibecoding-backend-0.0.1-SNAPSHOT.jar
 主要数据表：
 - `sys_user`: 用户表
 - `sys_config`: 系统配置表  
-- `sys_file`: 文件表
+- `sys_file_info`: 文件信息表
 - `sys_log`: 操作日志表
 
 ### JWT 认证
