@@ -49,7 +49,13 @@ public class DifyController {
                 request.getResponseMode()
             );
 
-            log.info("简历解析成功，姓名: {}", resumeInfo.getName());
+            // 检查响应是否为空
+            if (resumeInfo == null) {
+                log.error("简历解析失败，响应为空");
+                return Result.error(500, "简历解析失败：响应为空");
+            }
+
+            log.info("简历解析成功，姓名: {}", resumeInfo.getName() != null ? resumeInfo.getName() : "未知");
             return Result.success("简历解析成功", resumeInfo);
 
         } catch (Exception e) {

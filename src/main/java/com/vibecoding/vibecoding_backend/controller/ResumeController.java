@@ -1,5 +1,7 @@
 package com.vibecoding.vibecoding_backend.controller;
 
+import com.vibecoding.vibecoding_backend.annotation.ReportLog;
+import com.vibecoding.vibecoding_backend.aspect.ReportLogAspect;
 import com.vibecoding.vibecoding_backend.common.Result;
 import com.vibecoding.vibecoding_backend.dto.ResumeInfoResponse;
 import com.vibecoding.vibecoding_backend.dto.ResumeParseRequest;
@@ -30,6 +32,7 @@ public class ResumeController {
 
     private final DifyService difyService;
     private final ResumeGenerator resumeGenerator;
+    private final ReportLogAspect reportLogAspect;
 
     /**
      * 解析简历并生成Word文档
@@ -38,7 +41,12 @@ public class ResumeController {
      * @return 生成的文件下载URL
      */
     @PostMapping("/generate")
+    @ReportLog("简历生成")
     public Result<String> generateResume(@RequestBody ResumeParseRequest request) {
+        
+        long startTime = System.currentTimeMillis();
+        boolean success = false;
+        String errorMessage = null;
         
         try {
             log.info("收到简历生成请求: {}", request);
@@ -63,11 +71,16 @@ public class ResumeController {
             String downloadUrl = resumeGenerator.generateResume(resumeInfo);
 
             log.info("简历生成成功，下载URL: {}", downloadUrl);
+            success = true;
             return Result.success("简历生成成功", downloadUrl);
 
         } catch (Exception e) {
             log.error("简历生成失败", e);
+            errorMessage = e.getMessage();
             return Result.error(500, "简历生成失败: " + e.getMessage());
+        } finally {
+            // 记录报表日志
+            reportLogAspect.recordLog("简历生成", startTime, success, errorMessage);
         }
     }
 

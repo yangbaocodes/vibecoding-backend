@@ -36,7 +36,7 @@ public class DifyService {
      * @param resumeUrl 简历URL
      * @param user 用户标识
      * @param responseMode 响应模式
-     * @return 简历信息
+     * @return ResumeInfoResponse
      */
     public ResumeInfoResponse parseResumeInfo(String resumeUrl, String user, String responseMode) {
         DifyRequest request = null;

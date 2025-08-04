@@ -383,6 +383,7 @@ curl -O http://localhost:8080/api/resume/download/resume_80eae4a028d1468baf292a4
   - `resumeUrl` (简历URL，必填)
   - `user` (用户标识，默认: "2938922@qq.com")
   - `responseMode` (响应模式，默认: "streaming")
+- **认证**: 需要JWT token认证
 - **返回**: 简历详细信息
 - **示例**:
 ```bash
@@ -436,6 +437,7 @@ curl -X POST http://localhost:8080/api/dify/parse-resume \
   - `resumeUrl` (简历URL，必填)
   - `user` (用户标识，默认: "2938922@qq.com")
   - `responseMode` (响应模式，默认: "streaming")
+- **认证**: 需要JWT token认证
 - **返回**: 任务启动状态
 - **示例**:
 ```bash
@@ -450,6 +452,134 @@ curl -X POST http://localhost:8080/api/dify/parse-resume-async \
 
 #### Dify健康检查
 - **接口**: `GET /api/dify/health`
+- **认证**: 需要JWT token认证
+- **返回**: 服务状态
+
+### 报表相关
+
+#### 获取用户报表统计
+- **接口**: `GET /api/report/statistics`
+- **认证**: 需要JWT token认证
+- **参数**: 无需参数，通过认证信息获取用户
+- **返回**: 用户接口调用统计报表
+- **示例**:
+```bash
+curl -X GET http://localhost:8080/api/report/statistics \
+  -H "Authorization: Bearer <your-jwt-token>"
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取报表统计成功",
+  "data": {
+    "userEmail": "user@example.com",
+    "userId": 1,
+    "yearlyStatistics": [
+      {
+        "interfaceName": "简历生成",
+        "year": 2024,
+        "callCount": 15,
+        "successCount": 14,
+        "failCount": 1,
+        "avgResponseTime": 2500
+      }
+    ],
+    "monthlyStatistics": [
+      {
+        "interfaceName": "简历生成",
+        "year": 2024,
+        "month": 8,
+        "yearMonth": "2024-08",
+        "callCount": 5,
+        "successCount": 5,
+        "failCount": 0,
+        "avgResponseTime": 2300
+      }
+    ],
+    "dailyStatistics": [
+      {
+        "interfaceName": "简历生成",
+        "year": 2024,
+        "month": 8,
+        "day": 4,
+        "date": "2024-08-04",
+        "callCount": 2,
+        "successCount": 2,
+        "failCount": 0,
+        "avgResponseTime": 2100
+      }
+    ]
+  },
+  "timestamp": 1754243158837
+}
+```
+
+#### 获取用户一年内每天调用接口的累计次数
+- **接口**: `GET /api/report/yearly-daily-calls`
+- **认证**: 需要JWT token认证
+- **参数**: 
+  - `year` (可选): 年份，如2025，默认当前年份
+- **返回**: 用户指定年份内每天调用接口的累计次数（只返回有调用记录的日期）
+- **示例**:
+```bash
+# 获取当前年份的统计数据
+curl -X GET http://localhost:8080/api/report/yearly-daily-calls \
+  -H "Authorization: Bearer <your-jwt-token>"
+
+# 获取指定年份的统计数据
+curl -X GET "http://localhost:8080/api/report/yearly-daily-calls?year=2025" \
+  -H "Authorization: Bearer <your-jwt-token>"
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取2025年每天调用次数统计成功",
+  "data": {
+    "userEmail": "user@example.com",
+    "userId": 1,
+    "year": 2025,
+    "totalDays": 10,
+    "dailyCallCount": [
+      {
+        "callDate": "2025-08-04",
+        "totalCallCount": 5,
+        "successCount": 4,
+        "failCount": 1,
+        "avgResponseTime": 2300
+      },
+      {
+        "callDate": "2025-08-03",
+        "totalCallCount": 3,
+        "successCount": 3,
+        "failCount": 0,
+        "avgResponseTime": 2100
+      },
+      {
+        "callDate": "2025-07-15",
+        "totalCallCount": 2,
+        "successCount": 2,
+        "failCount": 0,
+        "avgResponseTime": 1900
+      }
+    ]
+  },
+  "timestamp": 1754243158837
+}
+```
+
+**功能说明**:
+- 支持指定年份查询，如不指定则默认当前年份
+- 只返回指定年份内有调用记录的日期，不返回365天的空数据
+- 如果指定年份只有10天调用了接口，那么返回的数据只有10天
+- 按日期倒序排列（最新的日期在前）
+- 包含每天的总调用次数、成功次数、失败次数和平均响应时间
+
+#### 报表健康检查
+- **接口**: `GET /api/report/health`
 - **认证**: 无需token验证
 - **返回**: 服务状态
 
