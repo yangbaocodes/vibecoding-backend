@@ -35,12 +35,14 @@ backend/
 │   ├── config/                              # 配置类
 │   │   ├── CorsConfig.java                  # 跨域配置
 │   │   ├── MyBatisPlusConfig.java           # MyBatis-Plus配置
-│   │   └── RedisConfig.java                 # Redis配置
+│   │   ├── RedisConfig.java                 # Redis配置
+│   │   └── DifyConfig.java                  # Dify配置
 │   ├── controller/                          # 控制器层
 │   │   ├── AuthController.java              # 认证控制器
 │   │   ├── SystemController.java            # 系统控制器
 │   │   ├── UserController.java              # 用户控制器
-│   │   └── FileController.java              # 文件控制器
+│   │   ├── FileController.java              # 文件控制器
+│   │   └── DifyController.java              # Dify控制器
 │   ├── dto/                                 # 数据传输对象
 │   │   ├── LoginRequest.java                # 登录请求DTO
 │   │   ├── RegisterRequest.java             # 注册请求DTO
@@ -61,7 +63,8 @@ backend/
 │   ├── service/                             # 服务层
 │   │   ├── UserService.java                  # 用户服务
 │   │   ├── EmailService.java                 # 邮件服务
-│   │   └── FileService.java                  # 文件服务
+│   │   ├── FileService.java                  # 文件服务
+│   │   └── DifyService.java                  # Dify服务
 │   └── util/                                # 工具类
 │       └── JwtUtils.java                    # JWT工具类
 ├── src/main/resources/
@@ -132,7 +135,41 @@ spring:
 java -jar target/vibecoding-backend-0.0.1-SNAPSHOT.jar
 ```
 
-项目启动后访问：http://localhost:8081/api
+项目启动后访问：http://localhost:8080/api
+
+### 5. 文件下载URL配置
+
+系统支持根据不同环境配置不同的文件下载基础URL：
+
+**开发环境配置** (`application.yml`):
+```yaml
+app:
+  file:
+    download-base-url: http://localhost:8080
+    storage-path: filesource
+    output-path: filetarget
+```
+
+**生产环境配置** (`application-prod.yml`):
+```yaml
+app:
+  file:
+    download-base-url: ${FILE_DOWNLOAD_BASE_URL:https://your-domain.com}
+    storage-path: filesource
+    output-path: filetarget
+```
+
+**环境变量配置**:
+```bash
+# 设置生产环境文件下载基础URL
+export FILE_DOWNLOAD_BASE_URL=https://api.yourdomain.com
+```
+
+**配置说明**:
+- `download-base-url`: 文件下载的基础URL，根据不同环境配置不同域名
+- `storage-path`: 文件存储目录，默认为 `filesource`
+- `output-path`: 文件输出目录，默认为 `filetarget`
+- 如果未配置 `download-base-url`，系统将使用相对路径
 
 ## 📋 API 接口
 
@@ -236,6 +273,168 @@ curl -X POST http://localhost:8080/api/file/upload \
 ```bash
 curl -O http://localhost:8080/api/file/files/filesource/uuid-filename.docx
 ```
+
+### 简历生成相关
+
+#### 生成简历Word文档
+- **接口**: `POST /api/resume/generate`
+- **参数**: JSON格式
+  - `resumeUrl` (简历URL，必填)
+  - `user` (用户标识，默认: "2938922@qq.com")
+  - `responseMode` (响应模式，默认: "streaming")
+- **认证**: 无需token验证
+- **返回**: 生成的文件下载URL
+- **示例**:
+```bash
+curl -X POST http://localhost:8080/api/resume/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resumeUrl": "https://aijsz-prod-ai-image.oss-cn-shanghai.aliyuncs.com/1ef5e775-405d-447d-b3ec-1742850355a3.docx",
+    "user": "2938922@qq.com",
+    "responseMode": "streaming"
+  }'
+```
+
+**简化参数示例**:
+```bash
+curl -X POST http://localhost:8080/api/resume/generate \
+  -H "Content-Type: application/json" \
+  -d '{"resumeUrl": "https://aijsz-prod-ai-image.oss-cn-shanghai.aliyuncs.com/1ef5e775-405d-447d-b3ec-1742850355a3.docx"}'
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "简历生成成功",
+  "data": "http://localhost:8080/api/file/files/filetarget/resume_80eae4a028d1468baf292a4a460ad5df.docx",
+  "timestamp": 1754243158837
+}
+```
+
+#### 下载生成的简历文件
+- **接口**: `GET /api/resume/download/{filename}`
+- **参数**: filename (文件名)
+- **认证**: 无需token验证
+- **返回**: Word文档文件流
+- **示例**:
+```bash
+curl -O http://localhost:8080/api/resume/download/resume_80eae4a028d1468baf292a4a460ad5df.docx
+```
+
+#### 简历生成健康检查
+- **接口**: `GET /api/resume/health`
+- **认证**: 无需token验证
+- **返回**: 服务状态
+
+**功能特性**:
+- 自动解析简历信息并生成标准Word文档
+- 使用POI-TL模板引擎，支持复杂的文档格式
+- 自动创建输出目录和生成唯一文件名
+- 支持下载生成的简历文件
+- 完整的错误处理和日志记录
+
+### Dify相关
+
+#### 简历解析
+- **接口**: `POST /api/dify/parse-resume`
+- **参数**: JSON格式
+  - `resumeUrl` (简历URL，必填)
+  - `user` (用户标识，默认: "2938922@qq.com")
+  - `responseMode` (响应模式，默认: "streaming")
+- **认证**: 无需token验证
+- **返回**: 简历详细信息
+- **示例**:
+```bash
+curl -X POST http://localhost:8080/api/dify/parse-resume \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resumeUrl": "https://aijsz-prod-ai-image.oss-cn-shanghai.aliyuncs.com/1ef5e775-405d-447d-b3ec-1742850355a3.docx",
+    "user": "2938922@qq.com",
+    "responseMode": "streaming"
+  }'
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "简历解析成功",
+  "data": {
+    "code": 0,
+    "name": "ZhouWu",
+    "englishName": "",
+    "experienceSummary": [
+      {
+        "company": "Cognizant",
+        "position": "Full-stack developer",
+        "startDate": "2021-07-01",
+        "endDate": "2024-07-01"
+      }
+    ],
+    "education": [...],
+    "workYears": 15,
+    "technologies": ["Nodejs（18.x）（3年）", "Python（3年）", ...],
+    "personalAdvantage": "Senior full stack development expert...",
+    "technicalSkills": {
+      "tools": ["VSCode", "visual studio", "Git", "Jira"],
+      "languages": ["nodejs", "python", "PHP", "C#", ...],
+      "platforms": ["PC", "Mobile"],
+      "databases": ["SQLite", "MongoDB", "MySQL", "sqlserver"],
+      "operatingSystems": ["Windows", "MacOS", "linux"],
+      "frameworks": ["VUE", "React", "Angular", "Mini Program", "Taro"]
+    },
+    "projectExperience": [...]
+  },
+  "timestamp": 1754240988886
+}
+```
+
+#### 异步简历解析
+- **接口**: `POST /api/dify/parse-resume-async`
+- **参数**: JSON格式
+  - `resumeUrl` (简历URL，必填)
+  - `user` (用户标识，默认: "2938922@qq.com")
+  - `responseMode` (响应模式，默认: "streaming")
+- **认证**: 无需token验证
+- **返回**: 任务启动状态
+- **示例**:
+```bash
+curl -X POST http://localhost:8080/api/dify/parse-resume-async \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resumeUrl": "https://aijsz-prod-ai-image.oss-cn-shanghai.aliyuncs.com/1ef5e775-405d-447d-b3ec-1742850355a3.docx",
+    "user": "2938922@qq.com",
+    "responseMode": "streaming"
+  }'
+```
+
+#### Dify健康检查
+- **接口**: `GET /api/dify/health`
+- **认证**: 无需token验证
+- **返回**: 服务状态
+
+#### Dify配置说明
+
+Dify服务配置在 `application.yml` 中：
+
+```yaml
+app:
+  dify:
+    base-url: https://dify.aistudio.ltd/v1
+    bearer-token: app-blj7fVtI82UlI0HWyberMKe4
+    workflow-path: /workflows/run
+    interface-name: getresumeinfo
+    connect-timeout: 10000
+    read-timeout: 30000
+```
+
+**功能特性**:
+- 支持同步和异步简历解析
+- 自动解析简历中的工作经验、教育背景、技术技能、项目经验等
+- 支持多种简历格式（docx、pdf）
+- 详细的错误处理和日志记录
+- 可配置的超时时间
 
 ## 🔧 开发指南
 

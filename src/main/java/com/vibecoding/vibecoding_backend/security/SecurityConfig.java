@@ -49,6 +49,8 @@ public class SecurityConfig {
                     "/system/health",
                     "/system/config",
                     "/file/files/**",
+                    "/dify/**",
+                    "/resume/**",
                     "/actuator/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**"

@@ -1,5 +1,6 @@
 package com.vibecoding.vibecoding_backend.service;
 
+import com.vibecoding.vibecoding_backend.config.FileConfig;
 import com.vibecoding.vibecoding_backend.entity.FileInfo;
 import com.vibecoding.vibecoding_backend.mapper.FileInfoMapper;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ import java.util.UUID;
 public class FileService {
 
     private final FileInfoMapper fileInfoMapper;
+    private final FileConfig fileConfig;
 
     /**
      * 支持的文件类型
@@ -104,7 +106,7 @@ public class FileService {
 
         // 生成UUID文件名
         String uuidFilename = UUID.randomUUID().toString() + "." + fileExtension;
-        String relativePath = FILE_STORAGE_PATH + "/" + uuidFilename;
+        String relativePath = fileConfig.getStoragePath() + "/" + uuidFilename;
         Path filePath = Paths.get(relativePath);
 
         // 保存文件
@@ -125,7 +127,7 @@ public class FileService {
         fileInfoMapper.insert(fileInfo);
 
         // 构建下载URL
-        String downloadUrl = "/api/file/files/" + FILE_STORAGE_PATH + "/" + uuidFilename;
+        String downloadUrl = fileConfig.buildDownloadUrl(fileConfig.getStoragePath(), uuidFilename);
 
         // 返回结果
         FileUploadResult result = new FileUploadResult();
@@ -178,7 +180,7 @@ public class FileService {
      * 创建存储目录
      */
     private void createStorageDirectory() {
-        Path storagePath = Paths.get(FILE_STORAGE_PATH);
+        Path storagePath = Paths.get(fileConfig.getStoragePath());
         if (!Files.exists(storagePath)) {
             try {
                 Files.createDirectories(storagePath);

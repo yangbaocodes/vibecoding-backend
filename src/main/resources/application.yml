@@ -117,7 +117,7 @@ logging:
   file:
     name: logs/vibecoding-backend.log
 
-# 应用自定义配置
+  # 应用自定义配置
 app:
   jwt:
     secret: vibecoding-jwt-secret-key-202406-very-long-and-secure-key-for-production-use-at-least-256-bits
@@ -126,6 +126,18 @@ app:
   file:
     upload-path: /uploads/
     max-size: 10485760 # 10MB
+    download-base-url: http://localhost:8080 # 开发环境默认URL
+    storage-path: filesource
+    output-path: filetarget
+  
+  # Dify配置
+  dify:
+    base-url: https://dify.aistudio.ltd/v1
+    bearer-token: app-blj7fVtI82UlI0HWyberMKe4
+    workflow-path: /workflows/run
+    interface-name: getresumeinfo
+    connect-timeout: 10000
+    read-timeout: 30000
   
   cors:
     allowed-origins: 
@@ -160,6 +172,10 @@ spring:
       password: redis_ZfJsEw
       database: 0
 
+app:
+  file:
+    download-base-url: https://vibecoding-api.aistudio.ltd
+
 logging:
   level:
     root: INFO
@@ -183,6 +199,10 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       database: 1
+
+app:
+  file:
+    download-base-url: ${FILE_DOWNLOAD_BASE_URL:https://your-domain.com}
 
 logging:
   level:
