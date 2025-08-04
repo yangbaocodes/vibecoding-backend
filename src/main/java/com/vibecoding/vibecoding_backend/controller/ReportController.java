@@ -41,10 +41,6 @@ public class ReportController {
             Authentication authentication,
             @org.springframework.web.bind.annotation.RequestParam(required = false) Integer year) {
         try {
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return Result.error(401, "用户未认证");
-            }
-
             String email = authentication.getName();
             Long userId = userService.getUserIdByEmail(email);
 

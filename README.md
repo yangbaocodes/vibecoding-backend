@@ -216,80 +216,103 @@ app:
 ## 📋 API 接口
 
 ### 认证相关
-- `POST /api/auth/send-verification-code` - 发送邮箱验证码
-- `POST /api/auth/login-or-register` - 统一的注册/登录接口
-- `POST /api/auth/logout` - 用户登出
+
+#### 发送邮箱验证码
+- **接口**: `POST /api/auth/send-verification-code`
+- **认证**: 无需token验证
+- **参数**: 
+  - `email`: 邮箱地址
+- **返回**: 验证码发送结果
+- **示例**:
+```bash
+curl -X POST http://localhost:8080/api/auth/send-verification-code \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
+```
+
+#### 登录/注册
+- **接口**: `POST /api/auth/login-or-register`
+- **认证**: 无需token验证
+- **参数**: 
+  - `email`: 邮箱地址
+  - `verificationCode`: 验证码
+- **返回**: JWT token和用户信息
+- **示例**:
+```bash
+curl -X POST http://localhost:8080/api/auth/login-or-register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "verificationCode": "123456"}'
+```
+
+#### 用户登出
+- **接口**: `POST /api/auth/logout`
+- **认证**: 需要JWT token认证
+- **返回**: 登出结果
+- **示例**:
+```bash
+curl -X POST http://localhost:8080/api/auth/logout \
+  -H "Authorization: Bearer <your-jwt-token>"
+```
 
 ### 用户相关
-- `GET /api/user/info` - 获取用户信息
-- `PUT /api/user/info` - 更新用户信息
-- `PUT /api/user/password` - 修改密码
 
-### 邮箱验证码功能
-
-#### 发送验证码
-**接口**: `POST /api/auth/send-verification-code`
-
-**请求参数**:
-```json
-{
-  "email": "user@example.com"
-}
+#### 获取用户信息
+- **接口**: `GET /api/user/info`
+- **认证**: 需要JWT token认证
+- **返回**: 用户详细信息
+- **示例**:
+```bash
+curl -X GET http://localhost:8080/api/user/info \
+  -H "Authorization: Bearer <your-jwt-token>"
 ```
 
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "验证码发送成功",
-  "data": null,
-  "timestamp": 1640995200000
-}
+#### 更新用户信息
+- **接口**: `PUT /api/user/info`
+- **认证**: 需要JWT token认证
+- **参数**: 用户信息对象
+- **返回**: 更新结果
+- **示例**:
+```bash
+curl -X PUT http://localhost:8080/api/user/info \
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"nickname": "新昵称"}'
 ```
 
-#### 注册/登录
-**接口**: `POST /api/auth/login-or-register`
-
-**请求参数**:
-```json
-{
-  "email": "user@example.com",
-  "verificationCode": "123456"
-}
+#### 修改密码
+- **接口**: `PUT /api/user/password`
+- **认证**: 需要JWT token认证
+- **参数**: 
+  - `oldPassword`: 旧密码
+  - `newPassword`: 新密码
+- **返回**: 修改结果
+- **示例**:
+```bash
+curl -X PUT http://localhost:8080/api/user/password \
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"oldPassword": "123456", "newPassword": "654321"}'
 ```
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "登录成功",
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiJ9...",
-    "isNewUser": false,
-    "user": {
-      "id": 1,
-      "username": "user",
-      "email": "user@example.com",
-      "nickname": "测试用户",
-      "role": "USER",
-      "status": 1
-    }
-  },
-  "timestamp": 1640995200000
-}
-```
-
-**功能说明**:
-- 验证码为6位纯数字
-- 验证码有效期为5分钟
-- 验证码存储在Redis中，键格式：`email:verification:{email}`
-- 使用163邮箱服务器发送邮件
-- 如果用户不存在则自动注册，如果存在则登录
-- 登录状态使用JWT Bearer Token实现
 
 ### 系统相关
-- `GET /api/system/health` - 健康检查
-- `GET /api/system/config` - 获取系统配置
+
+#### 健康检查
+- **接口**: `GET /api/system/health`
+- **认证**: 无需token验证
+- **返回**: 系统健康状态
+- **示例**:
+```bash
+curl -X GET http://localhost:8080/api/system/health
+```
+
+#### 获取系统配置
+- **接口**: `GET /api/system/config`
+- **认证**: 无需token验证
+- **返回**: 系统配置信息
+- **示例**:
+```bash
+curl -X GET http://localhost:8080/api/system/config
+```
 
 ### 文件相关
 

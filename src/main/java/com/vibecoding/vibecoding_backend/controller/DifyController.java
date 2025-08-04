@@ -95,14 +95,4 @@ public class DifyController {
             return Result.error(500, "启动异步简历解析失败: " + e.getMessage());
         }
     }
-
-    /**
-     * 健康检查
-     *
-     * @return 健康状态
-     */
-    @GetMapping("/health")
-    public Result<String> health() {
-        return Result.success("Dify服务正常");
-    }
 } 

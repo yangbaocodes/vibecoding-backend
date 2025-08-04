@@ -113,14 +113,4 @@ public class ResumeController {
             return ResponseEntity.internalServerError().build();
         }
     }
-
-    /**
-     * 健康检查
-     *
-     * @return 健康状态
-     */
-    @GetMapping("/health")
-    public Result<String> health() {
-        return Result.success("简历服务正常");
-    }
 } 
