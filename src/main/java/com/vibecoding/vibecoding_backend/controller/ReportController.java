@@ -29,48 +29,6 @@ public class ReportController {
     private final UserService userService;
 
     /**
-     * 获取用户报表统计
-     *
-     * @param authentication 认证信息
-     * @return 报表统计数据
-     */
-    @GetMapping("/statistics")
-    public Result<Map<String, Object>> getStatistics(Authentication authentication) {
-        try {
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return Result.error(401, "用户未认证");
-            }
-
-            String email = authentication.getName();
-            Long userId = userService.getUserIdByEmail(email);
-
-            if (userId == null) {
-                return Result.error(404, "用户不存在");
-            }
-
-            // 获取统计数据
-            List<Map<String, Object>> yearlyStats = reportLogService.getYearlyStatistics(userId);
-            List<Map<String, Object>> monthlyStats = reportLogService.getMonthlyStatistics(userId);
-            List<Map<String, Object>> dailyStats = reportLogService.getDailyStatistics(userId);
-
-            // 构建返回数据
-            Map<String, Object> result = new HashMap<>();
-            result.put("userEmail", email);
-            result.put("userId", userId);
-            result.put("yearlyStatistics", yearlyStats);
-            result.put("monthlyStatistics", monthlyStats);
-            result.put("dailyStatistics", dailyStats);
-
-            log.info("用户 {} 获取报表统计成功", email);
-            return Result.success("获取报表统计成功", result);
-
-        } catch (Exception e) {
-            log.error("获取报表统计失败", e);
-            return Result.error(500, "获取报表统计失败: " + e.getMessage());
-        }
-    }
-
-    /**
      * 获取用户一年内每天调用接口的累计次数
      * 只返回有调用记录的日期，不返回365天的空数据
      *
@@ -117,15 +75,5 @@ public class ReportController {
             log.error("获取每年调用次数统计失败", e);
             return Result.error(500, "获取每年调用次数统计失败: " + e.getMessage());
         }
-    }
-
-    /**
-     * 健康检查
-     *
-     * @return 健康状态
-     */
-    @GetMapping("/health")
-    public Result<String> health() {
-        return Result.success("报表服务正常");
     }
 } 

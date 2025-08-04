@@ -36,27 +36,6 @@ public class ReportLogService {
     }
 
     /**
-     * 获取用户年度统计
-     */
-    public List<Map<String, Object>> getYearlyStatistics(Long userId) {
-        return reportLogMapper.getYearlyStatistics(userId);
-    }
-
-    /**
-     * 获取用户月度统计
-     */
-    public List<Map<String, Object>> getMonthlyStatistics(Long userId) {
-        return reportLogMapper.getMonthlyStatistics(userId);
-    }
-
-    /**
-     * 获取用户日度统计
-     */
-    public List<Map<String, Object>> getDailyStatistics(Long userId) {
-        return reportLogMapper.getDailyStatistics(userId);
-    }
-
-    /**
      * 获取用户一年内每天调用接口的累计次数
      * 只返回有调用记录的日期，不返回365天的空数据
      *
