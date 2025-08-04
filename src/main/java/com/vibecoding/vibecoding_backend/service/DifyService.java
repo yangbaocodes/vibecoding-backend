@@ -120,23 +120,15 @@ public class DifyService {
     }
 
     /**
-     * 验证简历URL
+     * 验证简历文件非空
      *
-     * @param resumeUrl 简历URL
+     * @param fileName 简历文件
      * @return 是否有效
      */
-    public boolean validateResumeUrl(String resumeUrl) {
-        if (resumeUrl == null || resumeUrl.trim().isEmpty()) {
+    public boolean validateFileName(String fileName) {
+        if (fileName == null || fileName.trim().isEmpty()) {
             return false;
         }
-        
-        // 检查URL格式
-        try {
-            new java.net.URL(resumeUrl);
-            return true;
-        } catch (Exception e) {
-            log.warn("无效的简历URL: {}", resumeUrl);
-            return false;
-        }
+        return true;
     }
 } 

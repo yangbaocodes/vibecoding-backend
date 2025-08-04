@@ -17,15 +17,10 @@ import jakarta.validation.constraints.NotBlank;
 public class ResumeParseRequest {
 
     /**
-     * 简历URL
+     * 简历名称
      */
-    @NotBlank(message = "简历URL不能为空")
-    private String resumeUrl;
-
-    /**
-     * 用户标识
-     */
-    private String user = "2938922@qq.com";
+    @NotBlank(message = "简历名称不能为空")
+    private String fileName;
 
     /**
      * 响应模式

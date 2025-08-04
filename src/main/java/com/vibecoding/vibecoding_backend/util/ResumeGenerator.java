@@ -46,10 +46,10 @@ public class ResumeGenerator {
      * 生成简历Word文档
      * 
      * @param resumeData Dify解析的简历数据
-     * @return 生成的文件下载URL
+     * @return 生成的文件信息，包含下载URL和文件路径
      * @throws IOException 文件操作异常
      */
-    public String generateResume(ResumeInfoResponse resumeData) throws IOException {
+    public ResumeGenerationResult generateResume(ResumeInfoResponse resumeData) throws IOException {
         try {
             // 1. 处理数据格式化
             Map<String, Object> processedData = processResumeData(convert(resumeData));
@@ -67,8 +67,15 @@ public class ResumeGenerator {
             // 5. 构建下载URL
             String downloadUrl = fileConfig.buildDownloadUrl(fileConfig.getOutputPath(), filename);
             
+            // 6. 构建返回结果
+            ResumeGenerationResult result = new ResumeGenerationResult();
+            result.setDownloadUrl(downloadUrl);
+            result.setFilename(filename);
+            result.setTargetPath(fileConfig.getOutputPath() + "/" + filename);
+            result.setFileRealName((resumeData.getName() != null ? resumeData.getName() : "未知") + ".docx");
+            
             log.info("简历生成成功！输出文件：{}，下载URL：{}", outputPath, downloadUrl);
-            return downloadUrl;
+            return result;
             
         } catch (Exception e) {
             log.error("简历生成失败：{}", e.getMessage(), e);
@@ -197,4 +204,45 @@ public class ResumeGenerator {
         return mapper.convertValue(obj, new TypeReference<Map<String, Object>>() {});
     }
     
+    /**
+     * 简历生成结果类
+     */
+    public static class ResumeGenerationResult {
+        private String downloadUrl;
+        private String filename;
+        private String targetPath;
+        private String fileRealName;
+        
+        public String getDownloadUrl() {
+            return downloadUrl;
+        }
+        
+        public void setDownloadUrl(String downloadUrl) {
+            this.downloadUrl = downloadUrl;
+        }
+        
+        public String getFilename() {
+            return filename;
+        }
+        
+        public void setFilename(String filename) {
+            this.filename = filename;
+        }
+        
+        public String getTargetPath() {
+            return targetPath;
+        }
+        
+        public void setTargetPath(String targetPath) {
+            this.targetPath = targetPath;
+        }
+        
+        public String getFileRealName() {
+            return fileRealName;
+        }
+        
+        public void setFileRealName(String fileRealName) {
+            this.fileRealName = fileRealName;
+        }
+    }
 } 
