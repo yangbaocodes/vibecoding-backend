@@ -34,45 +34,62 @@ backend/
 │   │   └── ResultCode.java                  # 响应状态码枚举
 │   ├── config/                              # 配置类
 │   │   ├── CorsConfig.java                  # 跨域配置
+│   │   ├── FileConfig.java                  # 文件配置
 │   │   ├── MyBatisPlusConfig.java           # MyBatis-Plus配置
-│   │   ├── RedisConfig.java                 # Redis配置
-│   │   └── DifyConfig.java                  # Dify配置
+│   │   └── RedisConfig.java                 # Redis配置
 │   ├── controller/                          # 控制器层
 │   │   ├── AuthController.java              # 认证控制器
 │   │   ├── SystemController.java            # 系统控制器
 │   │   ├── UserController.java              # 用户控制器
 │   │   ├── FileController.java              # 文件控制器
-│   │   └── DifyController.java              # Dify控制器
+│   │   ├── ResumeController.java            # 简历控制器
+│   │   └── ReportController.java            # 报表控制器
 │   ├── dto/                                 # 数据传输对象
 │   │   ├── LoginRequest.java                # 登录请求DTO
 │   │   ├── RegisterRequest.java             # 注册请求DTO
+│   │   ├── ResumeParseRequest.java          # 简历解析请求DTO
+│   │   ├── ResumeInfoResponse.java          # 简历信息响应DTO
 │   │   └── UserInfoResponse.java            # 用户信息响应DTO
 │   ├── entity/                              # 实体类
 │   │   ├── User.java                        # 用户实体
-│   │   └── FileInfo.java                    # 文件信息实体
+│   │   ├── FileInfo.java                    # 文件信息实体
+│   │   └── ReportLog.java                   # 报表日志实体
 │   ├── exception/                           # 异常处理
 │   │   ├── BusinessException.java           # 业务异常
 │   │   └── GlobalExceptionHandler.java      # 全局异常处理器
 │   ├── mapper/                              # MyBatis映射器
 │   │   ├── UserMapper.java                   # 用户映射器
-│   │   └── FileInfoMapper.java               # 文件信息映射器
+│   │   ├── FileInfoMapper.java               # 文件信息映射器
+│   │   └── ReportLogMapper.java              # 报表日志映射器
 │   ├── security/                            # 安全相关
 │   │   ├── JwtAccessDeniedHandler.java      # JWT访问拒绝处理器
 │   │   ├── JwtAuthenticationEntryPoint.java # JWT认证入口点
+│   │   ├── JwtAuthenticationFilter.java     # JWT认证过滤器
+│   │   ├── JwtUtils.java                    # JWT工具类
+│   │   ├── CustomUserDetailsService.java    # 自定义用户详情服务
 │   │   └── SecurityConfig.java              # Spring Security配置
 │   ├── service/                             # 服务层
 │   │   ├── UserService.java                  # 用户服务
 │   │   ├── EmailService.java                 # 邮件服务
 │   │   ├── FileService.java                  # 文件服务
-│   │   └── DifyService.java                  # Dify服务
+│   │   ├── DifyService.java                  # Dify服务
+│   │   └── ReportLogService.java            # 报表日志服务
+│   ├── aspect/                              # 切面
+│   │   └── ReportLogAspect.java             # 报表日志切面
+│   ├── annotation/                          # 注解
+│   │   └── ReportLog.java                   # 报表日志注解
 │   └── util/                                # 工具类
-│       └── JwtUtils.java                    # JWT工具类
+│       └── ResumeGenerator.java              # 简历生成器
 ├── src/main/resources/
 │   ├── application.yml                      # 应用配置
 │   ├── db/migration/                        # 数据库脚本
-│   │   └── init.sql                         # 初始化脚本
+│   │   ├── init.sql                         # 初始化脚本
+│   │   ├── file_info.sql                    # 文件信息表
+│   │   ├── report_log.sql                   # 报表日志表
+│   │   └── fix_database.sql                 # 数据库修复脚本
 │   ├── static/                              # 静态资源
-│   └── templates/                           # 模板文件
+│   └── template/                            # 模板文件
+│       └── ResumeTemplate.docx              # 简历模板
 └── src/test/                                # 测试代码
 ```
 
@@ -343,18 +360,18 @@ curl -O http://localhost:8080/api/file/files/filesource/uuid-filename.docx
 
 #### 生成简历Word文档
 - **接口**: `POST /api/resume/generate`
+- **认证**: 需要JWT token认证
 - **参数**: JSON格式
-  - `resumeUrl` (简历URL，必填)
-  - `user` (用户标识，默认: "2938922@qq.com")
-  - `responseMode` (响应模式，默认: "streaming")
+  - `fileName` (文件名，必填) - 已上传到filesource目录的文件名
+  - `responseMode` (响应模式，可选，默认: "streaming")
 - **返回**: 生成的文件下载URL
 - **示例**:
 ```bash
 curl -X POST http://localhost:8080/api/resume/generate \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-jwt-token>" \
   -d '{
-    "resumeUrl": "https://aijsz-prod-ai-image.oss-cn-shanghai.aliyuncs.com/1ef5e775-405d-447d-b3ec-1742850355a3.docx",
-    "user": "2938922@qq.com",
+    "fileName": "1ef5e775-405d-447d-b3ec-1742850355a3.docx",
     "responseMode": "streaming"
   }'
 ```
@@ -363,7 +380,8 @@ curl -X POST http://localhost:8080/api/resume/generate \
 ```bash
 curl -X POST http://localhost:8080/api/resume/generate \
   -H "Content-Type: application/json" \
-  -d '{"resumeUrl": "https://aijsz-prod-ai-image.oss-cn-shanghai.aliyuncs.com/1ef5e775-405d-447d-b3ec-1742850355a3.docx"}'
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -d '{"fileName": "1ef5e775-405d-447d-b3ec-1742850355a3.docx"}'
 ```
 
 **响应示例**:
@@ -375,6 +393,14 @@ curl -X POST http://localhost:8080/api/resume/generate \
   "timestamp": 1754243158837
 }
 ```
+
+**功能说明**:
+- 根据已上传的文件名生成简历Word文档
+- 自动解析简历信息并生成标准Word文档
+- 使用POI-TL模板引擎，支持复杂的文档格式
+- 自动创建输出目录和生成唯一文件名
+- 生成后自动更新 `sys_file_info` 表中的 `targetPath` 和 `isTranslated` 字段
+- 完整的错误处理和日志记录
 
 #### 下载生成的简历文件
 - **接口**: `GET /api/resume/download/{filename}`
@@ -389,93 +415,6 @@ curl -O http://localhost:8080/api/resume/download/resume_80eae4a028d1468baf292a4
 #### 简历生成健康检查
 - **接口**: `GET /api/resume/health`
 - **认证**: 无需token验证
-- **返回**: 服务状态
-
-**功能特性**:
-- 自动解析简历信息并生成标准Word文档
-- 使用POI-TL模板引擎，支持复杂的文档格式
-- 自动创建输出目录和生成唯一文件名
-- 支持下载生成的简历文件
-- 完整的错误处理和日志记录
-
-### Dify相关
-
-#### 简历解析
-- **接口**: `POST /api/dify/parse-resume`
-- **参数**: JSON格式
-  - `resumeUrl` (简历URL，必填)
-  - `user` (用户标识，默认: "2938922@qq.com")
-  - `responseMode` (响应模式，默认: "streaming")
-- **认证**: 需要JWT token认证
-- **返回**: 简历详细信息
-- **示例**:
-```bash
-curl -X POST http://localhost:8080/api/dify/parse-resume \
-  -H "Content-Type: application/json" \
-  -d '{
-    "resumeUrl": "https://aijsz-prod-ai-image.oss-cn-shanghai.aliyuncs.com/1ef5e775-405d-447d-b3ec-1742850355a3.docx",
-    "user": "2938922@qq.com",
-    "responseMode": "streaming"
-  }'
-```
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "简历解析成功",
-  "data": {
-    "code": 0,
-    "name": "ZhouWu",
-    "englishName": "",
-    "experienceSummary": [
-      {
-        "company": "Cognizant",
-        "position": "Full-stack developer",
-        "startDate": "2021-07-01",
-        "endDate": "2024-07-01"
-      }
-    ],
-    "education": [...],
-    "workYears": 15,
-    "technologies": ["Nodejs（18.x）（3年）", "Python（3年）", ...],
-    "personalAdvantage": "Senior full stack development expert...",
-    "technicalSkills": {
-      "tools": ["VSCode", "visual studio", "Git", "Jira"],
-      "languages": ["nodejs", "python", "PHP", "C#", ...],
-      "platforms": ["PC", "Mobile"],
-      "databases": ["SQLite", "MongoDB", "MySQL", "sqlserver"],
-      "operatingSystems": ["Windows", "MacOS", "linux"],
-      "frameworks": ["VUE", "React", "Angular", "Mini Program", "Taro"]
-    },
-    "projectExperience": [...]
-  },
-  "timestamp": 1754240988886
-}
-```
-
-#### 异步简历解析
-- **接口**: `POST /api/dify/parse-resume-async`
-- **参数**: JSON格式
-  - `resumeUrl` (简历URL，必填)
-  - `user` (用户标识，默认: "2938922@qq.com")
-  - `responseMode` (响应模式，默认: "streaming")
-- **认证**: 需要JWT token认证
-- **返回**: 任务启动状态
-- **示例**:
-```bash
-curl -X POST http://localhost:8080/api/dify/parse-resume-async \
-  -H "Content-Type: application/json" \
-  -d '{
-    "resumeUrl": "https://aijsz-prod-ai-image.oss-cn-shanghai.aliyuncs.com/1ef5e775-405d-447d-b3ec-1742850355a3.docx",
-    "user": "2938922@qq.com",
-    "responseMode": "streaming"
-  }'
-```
-
-#### Dify健康检查
-- **接口**: `GET /api/dify/health`
-- **认证**: 需要JWT token认证
 - **返回**: 服务状态
 
 ### 报表相关
@@ -542,6 +481,47 @@ curl -X GET "http://localhost:8080/api/report/yearly-daily-calls?year=2025" \
 - 按日期倒序排列（最新的日期在前）
 - 包含每天的总调用次数、成功次数、失败次数和平均响应时间
 
-#### Dify配置说明
+## 🔧 配置说明
 
-Dify服务配置在 `
+### 文件配置
+
+文件相关配置在 `application.yml` 中：
+
+```yaml
+app:
+  file:
+    download-base-url: http://localhost:8080 # 开发环境默认URL
+    storage-path: filesource
+    output-path: filetarget
+```
+
+**功能特性**:
+- 支持不同环境的文件下载URL配置
+- 支持环境变量覆盖（生产环境）
+- 自动构建完整的文件下载URL
+- 统一的文件路径管理
+
+### 跨域配置
+
+CORS配置在 `application.yml` 中：
+
+```yaml
+app:
+  cors:
+    allowed-origins:
+      - "*"
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
+```
+
+**跨域配置说明**:
+- `allowed-origins`: 允许的跨域源，`"*"` 表示允许所有源
+- `allowed-methods`: 允许的HTTP方法
+- `allowed-headers`: 允许的请求头，`"*"` 表示允许所有头
+- `allow-credentials`: 是否允许发送Cookie和认证信息
