@@ -45,12 +45,9 @@ public class SecurityConfig {
                 // 允许访问的接口
                 .requestMatchers(
                     "/auth/**",
-                    "/user/send-verification-code",
                     "/system/health",
                     "/system/config",
                     "/file/files/**",
-                    // "/dify/**",
-                    // "/resume/**",
                     "/actuator/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**"

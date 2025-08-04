@@ -36,7 +36,7 @@ public class DifyService {
      * @param resumeUrl 简历URL
      * @param user 用户标识
      * @param responseMode 响应模式
-     * @return 简历信息
+     * @return ResumeInfoResponse
      */
     public ResumeInfoResponse parseResumeInfo(String resumeUrl, String user, String responseMode) {
         DifyRequest request = null;
@@ -120,23 +120,15 @@ public class DifyService {
     }
 
     /**
-     * 验证简历URL
+     * 验证简历文件非空
      *
-     * @param resumeUrl 简历URL
+     * @param fileName 简历文件
      * @return 是否有效
      */
-    public boolean validateResumeUrl(String resumeUrl) {
-        if (resumeUrl == null || resumeUrl.trim().isEmpty()) {
+    public boolean validateFileName(String fileName) {
+        if (fileName == null || fileName.trim().isEmpty()) {
             return false;
         }
-        
-        // 检查URL格式
-        try {
-            new java.net.URL(resumeUrl);
-            return true;
-        } catch (Exception e) {
-            log.warn("无效的简历URL: {}", resumeUrl);
-            return false;
-        }
+        return true;
     }
 } 

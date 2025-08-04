@@ -34,45 +34,62 @@ backend/
 │   │   └── ResultCode.java                  # 响应状态码枚举
 │   ├── config/                              # 配置类
 │   │   ├── CorsConfig.java                  # 跨域配置
+│   │   ├── FileConfig.java                  # 文件配置
 │   │   ├── MyBatisPlusConfig.java           # MyBatis-Plus配置
-│   │   ├── RedisConfig.java                 # Redis配置
-│   │   └── DifyConfig.java                  # Dify配置
+│   │   └── RedisConfig.java                 # Redis配置
 │   ├── controller/                          # 控制器层
 │   │   ├── AuthController.java              # 认证控制器
 │   │   ├── SystemController.java            # 系统控制器
 │   │   ├── UserController.java              # 用户控制器
 │   │   ├── FileController.java              # 文件控制器
-│   │   └── DifyController.java              # Dify控制器
+│   │   ├── ResumeController.java            # 简历控制器
+│   │   └── ReportController.java            # 报表控制器
 │   ├── dto/                                 # 数据传输对象
 │   │   ├── LoginRequest.java                # 登录请求DTO
 │   │   ├── RegisterRequest.java             # 注册请求DTO
+│   │   ├── ResumeParseRequest.java          # 简历解析请求DTO
+│   │   ├── ResumeInfoResponse.java          # 简历信息响应DTO
 │   │   └── UserInfoResponse.java            # 用户信息响应DTO
 │   ├── entity/                              # 实体类
 │   │   ├── User.java                        # 用户实体
-│   │   └── FileInfo.java                    # 文件信息实体
+│   │   ├── FileInfo.java                    # 文件信息实体
+│   │   └── ReportLog.java                   # 报表日志实体
 │   ├── exception/                           # 异常处理
 │   │   ├── BusinessException.java           # 业务异常
 │   │   └── GlobalExceptionHandler.java      # 全局异常处理器
 │   ├── mapper/                              # MyBatis映射器
 │   │   ├── UserMapper.java                   # 用户映射器
-│   │   └── FileInfoMapper.java               # 文件信息映射器
+│   │   ├── FileInfoMapper.java               # 文件信息映射器
+│   │   └── ReportLogMapper.java              # 报表日志映射器
 │   ├── security/                            # 安全相关
 │   │   ├── JwtAccessDeniedHandler.java      # JWT访问拒绝处理器
 │   │   ├── JwtAuthenticationEntryPoint.java # JWT认证入口点
+│   │   ├── JwtAuthenticationFilter.java     # JWT认证过滤器
+│   │   ├── JwtUtils.java                    # JWT工具类
+│   │   ├── CustomUserDetailsService.java    # 自定义用户详情服务
 │   │   └── SecurityConfig.java              # Spring Security配置
 │   ├── service/                             # 服务层
 │   │   ├── UserService.java                  # 用户服务
 │   │   ├── EmailService.java                 # 邮件服务
 │   │   ├── FileService.java                  # 文件服务
-│   │   └── DifyService.java                  # Dify服务
+│   │   ├── DifyService.java                  # Dify服务
+│   │   └── ReportLogService.java            # 报表日志服务
+│   ├── aspect/                              # 切面
+│   │   └── ReportLogAspect.java             # 报表日志切面
+│   ├── annotation/                          # 注解
+│   │   └── ReportLog.java                   # 报表日志注解
 │   └── util/                                # 工具类
-│       └── JwtUtils.java                    # JWT工具类
+│       └── ResumeGenerator.java              # 简历生成器
 ├── src/main/resources/
 │   ├── application.yml                      # 应用配置
 │   ├── db/migration/                        # 数据库脚本
-│   │   └── init.sql                         # 初始化脚本
+│   │   ├── init.sql                         # 初始化脚本
+│   │   ├── file_info.sql                    # 文件信息表
+│   │   ├── report_log.sql                   # 报表日志表
+│   │   └── fix_database.sql                 # 数据库修复脚本
 │   ├── static/                              # 静态资源
-│   └── templates/                           # 模板文件
+│   └── template/                            # 模板文件
+│       └── ResumeTemplate.docx              # 简历模板
 └── src/test/                                # 测试代码
 ```
 
@@ -216,80 +233,103 @@ app:
 ## 📋 API 接口
 
 ### 认证相关
-- `POST /api/auth/send-verification-code` - 发送邮箱验证码
-- `POST /api/auth/login-or-register` - 统一的注册/登录接口
-- `POST /api/auth/logout` - 用户登出
+
+#### 发送邮箱验证码
+- **接口**: `POST /api/auth/send-verification-code`
+- **认证**: 无需token验证
+- **参数**: 
+  - `email`: 邮箱地址
+- **返回**: 验证码发送结果
+- **示例**:
+```bash
+curl -X POST http://localhost:8080/api/auth/send-verification-code \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
+```
+
+#### 登录/注册
+- **接口**: `POST /api/auth/login-or-register`
+- **认证**: 无需token验证
+- **参数**: 
+  - `email`: 邮箱地址
+  - `verificationCode`: 验证码
+- **返回**: JWT token和用户信息
+- **示例**:
+```bash
+curl -X POST http://localhost:8080/api/auth/login-or-register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "verificationCode": "123456"}'
+```
+
+#### 用户登出
+- **接口**: `POST /api/auth/logout`
+- **认证**: 需要JWT token认证
+- **返回**: 登出结果
+- **示例**:
+```bash
+curl -X POST http://localhost:8080/api/auth/logout \
+  -H "Authorization: Bearer <your-jwt-token>"
+```
 
 ### 用户相关
-- `GET /api/user/info` - 获取用户信息
-- `PUT /api/user/info` - 更新用户信息
-- `PUT /api/user/password` - 修改密码
 
-### 邮箱验证码功能
-
-#### 发送验证码
-**接口**: `POST /api/auth/send-verification-code`
-
-**请求参数**:
-```json
-{
-  "email": "user@example.com"
-}
+#### 获取用户信息
+- **接口**: `GET /api/user/info`
+- **认证**: 需要JWT token认证
+- **返回**: 用户详细信息
+- **示例**:
+```bash
+curl -X GET http://localhost:8080/api/user/info \
+  -H "Authorization: Bearer <your-jwt-token>"
 ```
 
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "验证码发送成功",
-  "data": null,
-  "timestamp": 1640995200000
-}
+#### 更新用户信息
+- **接口**: `PUT /api/user/info`
+- **认证**: 需要JWT token认证
+- **参数**: 用户信息对象
+- **返回**: 更新结果
+- **示例**:
+```bash
+curl -X PUT http://localhost:8080/api/user/info \
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"nickname": "新昵称"}'
 ```
 
-#### 注册/登录
-**接口**: `POST /api/auth/login-or-register`
-
-**请求参数**:
-```json
-{
-  "email": "user@example.com",
-  "verificationCode": "123456"
-}
+#### 修改密码
+- **接口**: `PUT /api/user/password`
+- **认证**: 需要JWT token认证
+- **参数**: 
+  - `oldPassword`: 旧密码
+  - `newPassword`: 新密码
+- **返回**: 修改结果
+- **示例**:
+```bash
+curl -X PUT http://localhost:8080/api/user/password \
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"oldPassword": "123456", "newPassword": "654321"}'
 ```
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "登录成功",
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiJ9...",
-    "isNewUser": false,
-    "user": {
-      "id": 1,
-      "username": "user",
-      "email": "user@example.com",
-      "nickname": "测试用户",
-      "role": "USER",
-      "status": 1
-    }
-  },
-  "timestamp": 1640995200000
-}
-```
-
-**功能说明**:
-- 验证码为6位纯数字
-- 验证码有效期为5分钟
-- 验证码存储在Redis中，键格式：`email:verification:{email}`
-- 使用163邮箱服务器发送邮件
-- 如果用户不存在则自动注册，如果存在则登录
-- 登录状态使用JWT Bearer Token实现
 
 ### 系统相关
-- `GET /api/system/health` - 健康检查
-- `GET /api/system/config` - 获取系统配置
+
+#### 健康检查
+- **接口**: `GET /api/system/health`
+- **认证**: 无需token验证
+- **返回**: 系统健康状态
+- **示例**:
+```bash
+curl -X GET http://localhost:8080/api/system/health
+```
+
+#### 获取系统配置
+- **接口**: `GET /api/system/config`
+- **认证**: 无需token验证
+- **返回**: 系统配置信息
+- **示例**:
+```bash
+curl -X GET http://localhost:8080/api/system/config
+```
 
 ### 文件相关
 
@@ -320,18 +360,18 @@ curl -O http://localhost:8080/api/file/files/filesource/uuid-filename.docx
 
 #### 生成简历Word文档
 - **接口**: `POST /api/resume/generate`
+- **认证**: 需要JWT token认证
 - **参数**: JSON格式
-  - `resumeUrl` (简历URL，必填)
-  - `user` (用户标识，默认: "2938922@qq.com")
-  - `responseMode` (响应模式，默认: "streaming")
+  - `fileName` (文件名，必填) - 已上传到filesource目录的文件名
+  - `responseMode` (响应模式，可选，默认: "streaming")
 - **返回**: 生成的文件下载URL
 - **示例**:
 ```bash
 curl -X POST http://localhost:8080/api/resume/generate \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-jwt-token>" \
   -d '{
-    "resumeUrl": "https://aijsz-prod-ai-image.oss-cn-shanghai.aliyuncs.com/1ef5e775-405d-447d-b3ec-1742850355a3.docx",
-    "user": "2938922@qq.com",
+    "fileName": "1ef5e775-405d-447d-b3ec-1742850355a3.docx",
     "responseMode": "streaming"
   }'
 ```
@@ -340,7 +380,8 @@ curl -X POST http://localhost:8080/api/resume/generate \
 ```bash
 curl -X POST http://localhost:8080/api/resume/generate \
   -H "Content-Type: application/json" \
-  -d '{"resumeUrl": "https://aijsz-prod-ai-image.oss-cn-shanghai.aliyuncs.com/1ef5e775-405d-447d-b3ec-1742850355a3.docx"}'
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -d '{"fileName": "1ef5e775-405d-447d-b3ec-1742850355a3.docx"}'
 ```
 
 **响应示例**:
@@ -352,6 +393,14 @@ curl -X POST http://localhost:8080/api/resume/generate \
   "timestamp": 1754243158837
 }
 ```
+
+**功能说明**:
+- 根据已上传的文件名生成简历Word文档
+- 自动解析简历信息并生成标准Word文档
+- 使用POI-TL模板引擎，支持复杂的文档格式
+- 自动创建输出目录和生成唯一文件名
+- 生成后自动更新 `sys_file_info` 表中的 `targetPath` 和 `isTranslated` 字段
+- 完整的错误处理和日志记录
 
 #### 下载生成的简历文件
 - **接口**: `GET /api/resume/download/{filename}`
@@ -368,206 +417,111 @@ curl -O http://localhost:8080/api/resume/download/resume_80eae4a028d1468baf292a4
 - **认证**: 无需token验证
 - **返回**: 服务状态
 
-**功能特性**:
-- 自动解析简历信息并生成标准Word文档
-- 使用POI-TL模板引擎，支持复杂的文档格式
-- 自动创建输出目录和生成唯一文件名
-- 支持下载生成的简历文件
-- 完整的错误处理和日志记录
+### 报表相关
 
-### Dify相关
-
-#### 简历解析
-- **接口**: `POST /api/dify/parse-resume`
-- **参数**: JSON格式
-  - `resumeUrl` (简历URL，必填)
-  - `user` (用户标识，默认: "2938922@qq.com")
-  - `responseMode` (响应模式，默认: "streaming")
-- **返回**: 简历详细信息
+#### 获取用户一年内每天调用接口的累计次数
+- **接口**: `GET /api/report/yearly-daily-calls`
+- **认证**: 需要JWT token认证
+- **参数**: 
+  - `year` (可选): 年份，如2025，默认当前年份
+- **返回**: 用户指定年份内每天调用接口的累计次数（只返回有调用记录的日期）
 - **示例**:
 ```bash
-curl -X POST http://localhost:8080/api/dify/parse-resume \
-  -H "Content-Type: application/json" \
-  -d '{
-    "resumeUrl": "https://aijsz-prod-ai-image.oss-cn-shanghai.aliyuncs.com/1ef5e775-405d-447d-b3ec-1742850355a3.docx",
-    "user": "2938922@qq.com",
-    "responseMode": "streaming"
-  }'
+# 获取当前年份的统计数据
+curl -X GET http://localhost:8080/api/report/yearly-daily-calls \
+  -H "Authorization: Bearer <your-jwt-token>"
+
+# 获取指定年份的统计数据
+curl -X GET "http://localhost:8080/api/report/yearly-daily-calls?year=2025" \
+  -H "Authorization: Bearer <your-jwt-token>"
 ```
 
 **响应示例**:
 ```json
 {
   "code": 200,
-  "message": "简历解析成功",
+  "message": "获取2025年每天调用次数统计成功",
   "data": {
-    "code": 0,
-    "name": "ZhouWu",
-    "englishName": "",
-    "experienceSummary": [
+    "userEmail": "user@example.com",
+    "userId": 1,
+    "year": 2025,
+    "totalDays": 10,
+    "dailyCallCount": [
       {
-        "company": "Cognizant",
-        "position": "Full-stack developer",
-        "startDate": "2021-07-01",
-        "endDate": "2024-07-01"
+        "callDate": "2025-08-04",
+        "totalCallCount": 5,
+        "successCount": 4,
+        "failCount": 1,
+        "avgResponseTime": 2300
+      },
+      {
+        "callDate": "2025-08-03",
+        "totalCallCount": 3,
+        "successCount": 3,
+        "failCount": 0,
+        "avgResponseTime": 2100
+      },
+      {
+        "callDate": "2025-07-15",
+        "totalCallCount": 2,
+        "successCount": 2,
+        "failCount": 0,
+        "avgResponseTime": 1900
       }
-    ],
-    "education": [...],
-    "workYears": 15,
-    "technologies": ["Nodejs（18.x）（3年）", "Python（3年）", ...],
-    "personalAdvantage": "Senior full stack development expert...",
-    "technicalSkills": {
-      "tools": ["VSCode", "visual studio", "Git", "Jira"],
-      "languages": ["nodejs", "python", "PHP", "C#", ...],
-      "platforms": ["PC", "Mobile"],
-      "databases": ["SQLite", "MongoDB", "MySQL", "sqlserver"],
-      "operatingSystems": ["Windows", "MacOS", "linux"],
-      "frameworks": ["VUE", "React", "Angular", "Mini Program", "Taro"]
-    },
-    "projectExperience": [...]
+    ]
   },
-  "timestamp": 1754240988886
+  "timestamp": 1754243158837
 }
 ```
 
-#### 异步简历解析
-- **接口**: `POST /api/dify/parse-resume-async`
-- **参数**: JSON格式
-  - `resumeUrl` (简历URL，必填)
-  - `user` (用户标识，默认: "2938922@qq.com")
-  - `responseMode` (响应模式，默认: "streaming")
-- **返回**: 任务启动状态
-- **示例**:
-```bash
-curl -X POST http://localhost:8080/api/dify/parse-resume-async \
-  -H "Content-Type: application/json" \
-  -d '{
-    "resumeUrl": "https://aijsz-prod-ai-image.oss-cn-shanghai.aliyuncs.com/1ef5e775-405d-447d-b3ec-1742850355a3.docx",
-    "user": "2938922@qq.com",
-    "responseMode": "streaming"
-  }'
-```
+**功能说明**:
+- 支持指定年份查询，如不指定则默认当前年份
+- 只返回指定年份内有调用记录的日期，不返回365天的空数据
+- 如果指定年份只有10天调用了接口，那么返回的数据只有10天
+- 按日期倒序排列（最新的日期在前）
+- 包含每天的总调用次数、成功次数、失败次数和平均响应时间
 
-#### Dify健康检查
-- **接口**: `GET /api/dify/health`
-- **认证**: 无需token验证
-- **返回**: 服务状态
+## 🔧 配置说明
 
-#### Dify配置说明
+### 文件配置
 
-Dify服务配置在 `application.yml` 中：
+文件相关配置在 `application.yml` 中：
 
 ```yaml
 app:
-  dify:
-    base-url: https://dify.aistudio.ltd/v1
-    bearer-token: app-blj7fVtI82UlI0HWyberMKe4
-    workflow-path: /workflows/run
-    interface-name: getresumeinfo
-    connect-timeout: 10000
-    read-timeout: 30000
+  file:
+    download-base-url: http://localhost:8080 # 开发环境默认URL
+    storage-path: filesource
+    output-path: filetarget
 ```
 
 **功能特性**:
-- 支持同步和异步简历解析
-- 自动解析简历中的工作经验、教育背景、技术技能、项目经验等
-- 支持多种简历格式（docx、pdf）
-- 详细的错误处理和日志记录
-- 可配置的超时时间
+- 支持不同环境的文件下载URL配置
+- 支持环境变量覆盖（生产环境）
+- 自动构建完整的文件下载URL
+- 统一的文件路径管理
 
-## 🔧 开发指南
+### 跨域配置
 
-### 数据库设计
+CORS配置在 `application.yml` 中：
 
-主要数据表：
-- `sys_user`: 用户表
-- `sys_config`: 系统配置表  
-- `sys_file_info`: 文件信息表
-- `sys_log`: 操作日志表
-
-### JWT 认证
-
-默认配置：
-- 密钥：`vibecoding-jwt-secret-key-2024`
-- 过期时间：24小时
-- 请求头：`Authorization: Bearer <token>`
-
-### 缓存策略
-
-Redis 键命名规范：
-- 用户token：`user:token:{userId}`
-- 用户信息：`user:info:{userId}`
-- 系统配置：`system:config:{key}`
-- 邮箱验证码：`email:verification:{email}` (5分钟过期)
-
-### 异常处理
-
-统一响应格式：
-```json
-{
-  "code": 200,
-  "message": "操作成功",
-  "data": {...},
-  "timestamp": 1640995200000
-}
+```yaml
+app:
+  cors:
+    allowed-origins:
+      - "*"
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
 ```
 
-## 🧪 测试
-
-```bash
-# 运行所有测试
-./mvnw test
-
-# 运行特定测试
-./mvnw test -Dtest=UserControllerTest
-```
-
-## 📦 部署
-
-### Docker 部署
-
-```bash
-# 构建镜像
-docker build -t vibecoding-backend .
-
-# 运行容器
-docker run -p 8080:8080 vibecoding-backend
-```
-
-### 传统部署
-
-```bash
-# 打包
-./mvnw clean package -Pprod
-
-# 运行
-java -jar -Dspring.profiles.active=prod target/vibecoding-backend-0.0.1-SNAPSHOT.jar
-```
-
-## 📋 默认账号
-
-| 用户名 | 密码   | 角色  | 邮箱                    |
-|--------|--------|-------|-------------------------|
-| admin  | 123456 | ADMIN | admin@vibecoding.com    |
-| user   | 123456 | USER  | user@vibecoding.com     |
-
-## 🤝 贡献
-
-1. Fork 项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建 Pull Request
-
-## 📄 许可证
-
-本项目基于 MIT 许可证开源 - 查看 [LICENSE](LICENSE) 文件了解详情
-
-## 📞 联系方式
-
-- 项目地址：https://github.com/your-org/vibecoding-backend
-- 问题反馈：https://github.com/your-org/vibecoding-backend/issues
-
----
-
-**VibeCode Team** - 让编程更有活力！ 🚀
+**跨域配置说明**:
+- `allowed-origins`: 允许的跨域源，`"*"` 表示允许所有源
+- `allowed-methods`: 允许的HTTP方法
+- `allowed-headers`: 允许的请求头，`"*"` 表示允许所有头
+- `allow-credentials`: 是否允许发送Cookie和认证信息
