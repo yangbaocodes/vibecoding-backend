@@ -1,9 +1,14 @@
 package com.vibecoding.vibecoding_backend.controller;
 
 import com.vibecoding.vibecoding_backend.common.Result;
+import com.vibecoding.vibecoding_backend.dto.EmailVerificationRequest;
 import com.vibecoding.vibecoding_backend.dto.LoginRequest;
 import com.vibecoding.vibecoding_backend.dto.RegisterRequest;
 import com.vibecoding.vibecoding_backend.dto.UserInfoResponse;
+import com.vibecoding.vibecoding_backend.entity.User;
+import com.vibecoding.vibecoding_backend.security.JwtUtils;
+import com.vibecoding.vibecoding_backend.service.UserService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -21,50 +26,74 @@ import java.util.Map;
 @RestController
 @RequestMapping("/auth")
 @Validated
+@RequiredArgsConstructor
 public class AuthController {
 
+    private final UserService userService;
+    private final JwtUtils jwtUtils;
+
     /**
-     * 用户登录
+     * 发送邮箱验证码
      */
-    @PostMapping("/login")
-    public Result<Map<String, Object>> login(@Valid @RequestBody LoginRequest request) {
-        log.info("用户登录请求: {}", request.getUsername());
+    @PostMapping("/send-verification-code")
+    public Result<Void> sendVerificationCode(@Valid @RequestBody EmailVerificationRequest request) {
+        log.info("发送验证码请求: {}", request.getEmail());
         
-        // TODO: 实现登录逻辑
-        // 模拟登录成功响应
-        Map<String, Object> data = new HashMap<>();
-        data.put("token", "mock-jwt-token-" + System.currentTimeMillis());
+        boolean success = userService.sendVerificationCode(request.getEmail());
         
-        UserInfoResponse user = new UserInfoResponse()
-                .setId(1L)
-                .setUsername(request.getUsername())
-                .setEmail("user@example.com")
-                .setNickname("测试用户")
-                .setRole("USER")
-                .setStatus(1);
-        data.put("user", user);
-        
-        return Result.success("登录成功", data);
+        if (success) {
+            return Result.<Void>success("验证码发送成功", null);
+        } else {
+            return Result.<Void>error("验证码发送失败，请稍后重试");
+        }
     }
 
     /**
-     * 用户注册
+     * 统一的注册/登录接口
+     * 如果用户不存在则注册，如果存在则登录
      */
-    @PostMapping("/register")
-    public Result<UserInfoResponse> register(@Valid @RequestBody RegisterRequest request) {
-        log.info("用户注册请求: {}", request.getUsername());
+    @PostMapping("/login-or-register")
+    public Result<Map<String, Object>> loginOrRegister(@Valid @RequestBody LoginRequest request) {
+        log.info("用户登录/注册请求: {}", request.getEmail());
         
-        // TODO: 实现注册逻辑
-        // 模拟注册成功响应
-        UserInfoResponse user = new UserInfoResponse()
-                .setId(2L)
-                .setUsername(request.getUsername())
-                .setEmail(request.getEmail())
-                .setNickname(request.getNickname())
-                .setRole("USER")
-                .setStatus(1);
+        // 验证邮箱验证码
+        if (!userService.verifyEmailCode(request.getEmail(), request.getVerificationCode())) {
+            return Result.error("验证码错误或已过期");
+        }
         
-        return Result.success("注册成功", user);
+        // 查找用户是否存在
+        User user = userService.findByEmail(request.getEmail());
+        boolean isNewUser = false;
+        
+        if (user == null) {
+            // 用户不存在，创建新用户
+            user = userService.createUser(request.getEmail(), null);
+            isNewUser = true;
+            log.info("创建新用户: {}", user.getEmail());
+        }
+        
+        // 更新最后登录时间
+        userService.updateLastLoginTime(user.getId());
+        
+        // 生成JWT token
+        String token = jwtUtils.generateToken(user.getId(), user.getEmail(), user.getUsername());
+        
+        // 构建响应数据
+        Map<String, Object> data = new HashMap<>();
+        data.put("token", token);
+        data.put("isNewUser", isNewUser);
+        
+        UserInfoResponse userInfo = new UserInfoResponse()
+                .setId(user.getId())
+                .setUsername(user.getUsername())
+                .setEmail(user.getEmail())
+                .setNickname(user.getNickname())
+                .setRole(user.getRole())
+                .setStatus(user.getStatus());
+        data.put("user", userInfo);
+        
+        String message = isNewUser ? "注册成功" : "登录成功";
+        return Result.success(message, data);
     }
 
     /**
@@ -75,6 +104,7 @@ public class AuthController {
         log.info("用户登出");
         
         // TODO: 实现登出逻辑（清除token等）
+        // 由于使用JWT，客户端只需要删除token即可
         
         return Result.<Void>success("登出成功", null);
     }

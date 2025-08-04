@@ -1,10 +1,14 @@
 package com.vibecoding.vibecoding_backend.controller;
 
 import com.vibecoding.vibecoding_backend.common.Result;
+import com.vibecoding.vibecoding_backend.dto.EmailVerificationRequest;
 import com.vibecoding.vibecoding_backend.dto.UserInfoResponse;
+import com.vibecoding.vibecoding_backend.service.EmailService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -17,6 +21,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/user")
 public class UserController {
+
+    @Autowired
+    private EmailService emailService;
 
     /**
      * 获取用户信息
@@ -65,5 +72,21 @@ public class UserController {
         // TODO: 实现修改密码逻辑
         
         return Result.<Void>success("密码修改成功", null);
+    }
+
+    /**
+     * 发送邮箱验证码
+     */
+    @PostMapping("/send-verification-code")
+    public Result<Void> sendVerificationCode(@Valid @RequestBody EmailVerificationRequest request) {
+        log.info("发送邮箱验证码，邮箱: {}", request.getEmail());
+        
+        boolean success = emailService.sendVerificationCode(request.getEmail());
+        
+        if (success) {
+            return Result.<Void>success("验证码发送成功", null);
+        } else {
+            return Result.<Void>error("验证码发送失败，请稍后重试");
+        }
     }
 }

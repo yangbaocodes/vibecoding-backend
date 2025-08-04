@@ -1,5 +1,6 @@
 package com.vibecoding.vibecoding_backend;
 
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -9,6 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author VibeCode Team
  */
 @SpringBootApplication
+@MapperScan("com.vibecoding.vibecoding_backend.mapper")
 public class VibeCodingBackendApplication {
 
 	public static void main(String[] args) {
