@@ -42,7 +42,7 @@ public class EmailService {
             
             // 发送邮件
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(email);
+            message.setFrom("noreply_vibecoding@yeah.net");
             message.setTo(email);
             message.setSubject("[Cognizant Resume Format] Verification Code");
             message.setText("You are logging in to Cognizant Resume Format Service.\nYour verification code is:" + verificationCode + "\n\nValid for 5 minutes. Do not share this code with anyone.\n\nIgnore this email if you did not request this action.");
