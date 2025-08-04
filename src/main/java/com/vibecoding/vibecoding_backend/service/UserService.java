@@ -95,6 +95,17 @@ public class UserService {
     }
 
     /**
+     * 根据邮箱获取用户ID
+     *
+     * @param email 邮箱
+     * @return 用户ID
+     */
+    public Long getUserIdByEmail(String email) {
+        User user = findByEmail(email);
+        return user != null ? user.getId() : null;
+    }
+
+    /**
      * 根据邮箱生成用户名
      *
      * @param email 邮箱

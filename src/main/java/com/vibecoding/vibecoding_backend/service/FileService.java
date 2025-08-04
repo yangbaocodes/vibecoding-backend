@@ -106,8 +106,8 @@ public class FileService {
 
         // 生成UUID文件名
         String uuidFilename = UUID.randomUUID().toString() + "." + fileExtension;
-        String relativePath = fileConfig.getStoragePath() + "/" + uuidFilename;
-        Path filePath = Paths.get(relativePath);
+        String sourcePath = fileConfig.getStoragePath() + "/" + uuidFilename;
+        Path filePath = Paths.get(sourcePath);
 
         // 保存文件
         Files.write(filePath, file.getBytes());
@@ -116,9 +116,9 @@ public class FileService {
         FileInfo fileInfo = new FileInfo();
         fileInfo.setFilename(uuidFilename);
         fileInfo.setFileRealName(originalFilename);
-        fileInfo.setPath(relativePath);
+        fileInfo.setPath(sourcePath);
         fileInfo.setCreatedBy(createdBy);
-        fileInfo.setTargetPath(relativePath);
+        fileInfo.setTargetPath("");
         fileInfo.setIsTranslated(0); // 默认未转换
         fileInfo.setFileSize(file.getSize());
         fileInfo.setFileType(fileExtension);
@@ -136,7 +136,7 @@ public class FileService {
         result.setSuccess(true);
         result.setMessage("文件上传成功");
 
-        log.info("文件上传成功: {}, 存储路径: {}", originalFilename, relativePath);
+        log.info("文件上传成功: {}, 存储路径: {}", originalFilename, sourcePath);
         return result;
     }
 

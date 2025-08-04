@@ -57,7 +57,7 @@ public class FileController {
                     .map(result -> {
                         FileUploadResponse response = new FileUploadResponse();
                         response.setFilename(result.getFilename());
-                        response.setFileUrl(result.getFileUrl());
+                        response.setFileUrl("");
                         return response;
                     })
                     .toList();
