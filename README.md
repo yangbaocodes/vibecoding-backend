@@ -171,6 +171,48 @@ export FILE_DOWNLOAD_BASE_URL=https://api.yourdomain.com
 - `output-path`: 文件输出目录，默认为 `filetarget`
 - 如果未配置 `download-base-url`，系统将使用相对路径
 
+### 6. 跨域配置
+
+系统支持跨域请求配置：
+
+**开发环境配置**:
+```yaml
+app:
+  cors:
+    allowed-origins: 
+      - "*"  # 允许所有源
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
+```
+
+**生产环境配置**:
+```yaml
+app:
+  cors:
+    allowed-origins: 
+      - "*"  # 允许所有源
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
+```
+
+**跨域配置说明**:
+- `allowed-origins`: 允许的跨域源，`"*"` 表示允许所有源
+- `allowed-methods`: 允许的HTTP方法
+- `allowed-headers`: 允许的请求头，`"*"` 表示允许所有头
+- `allow-credentials`: 是否允许发送Cookie和认证信息
+
 ## 📋 API 接口
 
 ### 认证相关
