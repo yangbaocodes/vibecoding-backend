@@ -46,8 +46,8 @@ spring:
   mail:
     host: smtp.163.com
     port: 465
-    username: duoqin@163.com
-    password: KSsRsVhigbvkcBW9
+    username: noreply_vibecoding@yeah.net
+    password: XKS95ZQAFRnvGtRb
     properties:
       mail:
         smtp:
