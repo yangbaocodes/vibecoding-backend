@@ -282,7 +282,6 @@ curl -O http://localhost:8080/api/file/files/filesource/uuid-filename.docx
   - `resumeUrl` (简历URL，必填)
   - `user` (用户标识，默认: "2938922@qq.com")
   - `responseMode` (响应模式，默认: "streaming")
-- **认证**: 无需token验证
 - **返回**: 生成的文件下载URL
 - **示例**:
 ```bash
@@ -342,7 +341,6 @@ curl -O http://localhost:8080/api/resume/download/resume_80eae4a028d1468baf292a4
   - `resumeUrl` (简历URL，必填)
   - `user` (用户标识，默认: "2938922@qq.com")
   - `responseMode` (响应模式，默认: "streaming")
-- **认证**: 无需token验证
 - **返回**: 简历详细信息
 - **示例**:
 ```bash
@@ -396,7 +394,6 @@ curl -X POST http://localhost:8080/api/dify/parse-resume \
   - `resumeUrl` (简历URL，必填)
   - `user` (用户标识，默认: "2938922@qq.com")
   - `responseMode` (响应模式，默认: "streaming")
-- **认证**: 无需token验证
 - **返回**: 任务启动状态
 - **示例**:
 ```bash

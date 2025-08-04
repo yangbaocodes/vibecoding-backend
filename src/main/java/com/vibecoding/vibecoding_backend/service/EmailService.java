@@ -42,10 +42,10 @@ public class EmailService {
             
             // 发送邮件
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("duoqin@163.com");
+            message.setFrom(email);
             message.setTo(email);
-            message.setSubject("VibeCode - 邮箱验证码");
-            message.setText("您的验证码是：" + verificationCode + "\n\n验证码有效期为5分钟，请及时使用。\n\n如果这不是您的操作，请忽略此邮件。");
+            message.setSubject("[Cognizant Resume Format] Verification Code");
+            message.setText("You are logging in to Cognizant Resume Format Service.\nYour verification code is:" + verificationCode + "\n\nValid for 5 minutes. Do not share this code with anyone.\n\nIgnore this email if you did not request this action.");
             
             mailSender.send(message);
             
