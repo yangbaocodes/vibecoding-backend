@@ -260,13 +260,9 @@ public class FileService {
                 }
                 
                 try (FileInputStream fis = new FileInputStream(targetFile)) {
-                    // 获取原文件名（不含扩展名）
+                    // 获取不带扩展名的文件名，然后统一添加.docx后缀
                     String originalName = fileInfo.getFileRealName();
-                    String nameWithoutExtension = originalName;
-                    if (originalName.contains(".")) {
-                        nameWithoutExtension = originalName.substring(0, originalName.lastIndexOf("."));
-                    }
-                    // 确保新文件名后缀为docx
+                    String nameWithoutExtension = getFileNameWithoutExtension(originalName);
                     String newFileName = "new_" + nameWithoutExtension + ".docx";
                     ZipEntry zipEntry = new ZipEntry(newFileName);
                     zipOut.putNextEntry(zipEntry);
@@ -294,6 +290,19 @@ public class FileService {
             return "";
         }
         return filename.substring(filename.lastIndexOf(".") + 1);
+    }
+
+    /**
+     * 获取不带扩展名的文件名
+     *
+     * @param filename 文件名
+     * @return 不带扩展名的文件名
+     */
+    private String getFileNameWithoutExtension(String filename) {
+        if (filename == null || filename.lastIndexOf(".") == -1) {
+            return filename;
+        }
+        return filename.substring(0, filename.lastIndexOf("."));
     }
 
     /**
