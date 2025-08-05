@@ -260,7 +260,15 @@ public class FileService {
                 }
                 
                 try (FileInputStream fis = new FileInputStream(targetFile)) {
-                    ZipEntry zipEntry = new ZipEntry("new_"+fileInfo.getFileRealName());
+                    // 获取原文件名（不含扩展名）
+                    String originalName = fileInfo.getFileRealName();
+                    String nameWithoutExtension = originalName;
+                    if (originalName.contains(".")) {
+                        nameWithoutExtension = originalName.substring(0, originalName.lastIndexOf("."));
+                    }
+                    // 确保新文件名后缀为docx
+                    String newFileName = "new_" + nameWithoutExtension + ".docx";
+                    ZipEntry zipEntry = new ZipEntry(newFileName);
                     zipOut.putNextEntry(zipEntry);
                     
                     byte[] buffer = new byte[1024];

@@ -11,18 +11,10 @@ import com.vibecoding.vibecoding_backend.service.DifyService;
 import com.vibecoding.vibecoding_backend.util.ResumeGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import com.vibecoding.vibecoding_backend.config.FileConfig;
-
-import java.io.File;
-import java.io.IOException;
-import java.time.LocalDateTime;
 
 /**
  * 简历控制器
@@ -84,9 +76,8 @@ public class ResumeController {
             // 保存文件信息到数据库
             saveFileInfoToDatabase(result, authentication);
 
-            log.info("简历生成成功，下载URL: {}", result.getDownloadUrl());
             success = true;
-            return Result.success("简历生成成功", result.getDownloadUrl());
+            return Result.success("简历生成成功",request.getFileName());
 
         } catch (Exception e) {
             log.error("简历生成失败", e);
@@ -126,33 +117,5 @@ public class ResumeController {
         }
     }
 
-    /**
-     * 下载生成的简历文件
-     *
-     * @param filename 文件名
-     * @return 文件下载响应
-     */
-    @GetMapping("/download/{filename}")
-    public ResponseEntity<Resource> downloadResume(@PathVariable String filename) {
-        try {
-            String filePath = "filetarget/" + filename;
-            File file = new File(filePath);
-            
-            if (!file.exists()) {
-                log.error("文件不存在: {}", filePath);
-                return ResponseEntity.notFound().build();
-            }
 
-            Resource resource = new FileSystemResource(file);
-            
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .body(resource);
-
-        } catch (Exception e) {
-            log.error("文件下载失败", e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
 } 
