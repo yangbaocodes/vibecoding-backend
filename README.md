@@ -7,20 +7,21 @@
 ### 核心框架
 - **JDK**: OpenJDK 21
 - **Spring Boot**: 3.4.0
-- **Spring Security**: 6.x (JWT 无状态认证)
+- **Spring Security**: 6.4.1 (JWT 无状态认证)
 - **Spring Data Redis**: 缓存管理
 
 ### 数据持久化
-- **MyBatis-Plus**: 3.5.5 (分页插件、逻辑删除、自动填充)
+- **MyBatis-Plus**: 3.5.7 (分页插件、逻辑删除、自动填充)
 - **HikariCP**: 高性能连接池
 - **MySQL**: 8.0+ (主数据库)
 
 ### 其他依赖
 - **Redis**: 缓存和会话管理
-- **JWT**: 无状态认证
+- **JWT**: 0.12.3 (无状态认证)
 - **Lombok**: 简化代码
 - **Jackson**: JSON 序列化
 - **Validation**: 参数校验
+- **POI-TL**: 1.12.1 (Word文档模板处理)
 
 ## 📁 项目结构
 
@@ -37,7 +38,8 @@ backend/
 │   │   ├── FileConfig.java                  # 文件配置
 │   │   ├── MyBatisPlusConfig.java           # MyBatis-Plus配置
 │   │   ├── RedisConfig.java                 # Redis配置
-│   │   └── DifyConfig.java                  # Dify服务配置
+│   │   ├── DifyConfig.java                  # Dify服务配置
+│   │   └── PasswordConfig.java              # 密码编码器配置
 │   ├── controller/                          # 控制器层
 │   │   ├── AuthController.java              # 认证控制器
 │   │   ├── SystemController.java            # 系统控制器
@@ -47,12 +49,13 @@ backend/
 │   │   └── ReportController.java            # 报表控制器
 │   ├── dto/                                 # 数据传输对象
 │   │   ├── LoginRequest.java                # 登录请求DTO
-│   │   ├── RegisterRequest.java             # 注册请求DTO
+│   │   ├── EmailVerificationRequest.java    # 邮箱验证请求DTO
 │   │   ├── ResumeParseRequest.java          # 简历解析请求DTO
 │   │   ├── ResumeInfoResponse.java          # 简历信息响应DTO
 │   │   ├── UserInfoResponse.java            # 用户信息响应DTO
 │   │   ├── BatchDownloadRequest.java        # 批量下载请求DTO
-│   │   └── BatchDownloadResponse.java       # 批量下载响应DTO
+│   │   ├── BatchDownloadResponse.java       # 批量下载响应DTO
+│   │   └── DifyRequest.java                 # Dify服务请求DTO
 │   ├── entity/                              # 实体类
 │   │   ├── User.java                        # 用户实体
 │   │   ├── FileInfo.java                    # 文件信息实体
@@ -111,6 +114,7 @@ backend/
 ### 简历转换系统
 - **AI 解析**: 集成 Dify 服务解析简历信息
 - **模板生成**: 基于 Cognizant 模板生成标准化简历
+- **文件命名**: 批量下载时统一使用 "Cognizant_" 前缀和 .docx 后缀
 - **状态跟踪**: 实时跟踪转换状态和进度
 
 ### 报表统计系统
@@ -275,6 +279,8 @@ backend/
 ```yaml
 app:
   file:
+    upload-path: /uploads/
+    max-size: 10485760 # 10MB
     download-base-url: http://localhost:8080 # 开发环境默认URL
     storage-path: filesource
     output-path: filetarget
@@ -284,6 +290,8 @@ app:
 - 支持不同环境的文件下载URL配置
 - 支持环境变量覆盖（生产环境）
 - 自动构建完整的文件下载URL
+- 文件上传大小限制：10MB
+- 支持的文件类型：DOCX、PDF
 
 ### 数据库配置
 
@@ -310,9 +318,14 @@ spring:
 ### Dify 服务配置
 
 ```yaml
-dify:
-  api-url: your_dify_api_url
-  api-key: your_dify_api_key
+app:
+  dify:
+    base-url: https://dify.aistudio.ltd/v1
+    bearer-token: your_dify_bearer_token
+    workflow-path: /workflows/run
+    interface-name: getresumeinfo
+    connect-timeout: 10000
+    read-timeout: 30000
 ```
 
 ## 🚀 部署指南
@@ -328,16 +341,17 @@ dify:
 1. **配置数据库**
    ```bash
    # 创建数据库
-   CREATE DATABASE vibecoding CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE DATABASE vibecoding_dev CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    
    # 执行初始化脚本
-   mysql -u username -p vibecoding < src/main/resources/db/migration/init.sql
+   mysql -u username -p vibecoding_dev < src/main/resources/db/migration/init.sql
+   mysql -u username -p vibecoding_dev < src/main/resources/db/migration/report_log.sql
    ```
 
 2. **配置环境变量**
    ```bash
    # 设置数据库连接
-   export SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/vibecoding
+   export SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/vibecoding_dev
    export SPRING_DATASOURCE_USERNAME=your_username
    export SPRING_DATASOURCE_PASSWORD=your_password
    
@@ -346,9 +360,10 @@ dify:
    export SPRING_REDIS_PORT=6379
    export SPRING_REDIS_PASSWORD=your_redis_password
    
-   # 设置Dify服务
-   export DIFY_API_URL=your_dify_api_url
-   export DIFY_API_KEY=your_dify_api_key
+   # 设置邮件服务
+   export SPRING_MAIL_HOST=smtp.yeah.net
+   export SPRING_MAIL_USERNAME=your_email@yeah.net
+   export SPRING_MAIL_PASSWORD=your_email_password
    ```
 
 3. **启动应用**
@@ -365,7 +380,7 @@ dify:
 
 2. **运行应用**
    ```bash
-   java -jar target/vibecoding-backend-1.0.0.jar
+   java -jar target/vibecoding-backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
    ```
 
 3. **使用Docker部署**
@@ -377,6 +392,21 @@ dify:
    docker run -d -p 8080:8080 --name vibecoding-backend vibecoding-backend
    ```
 
+4. **环境变量配置**
+   ```bash
+   # 生产环境数据库
+   export DB_USERNAME=your_prod_username
+   export DB_PASSWORD=your_prod_password
+   
+   # 生产环境Redis
+   export REDIS_HOST=your_redis_host
+   export REDIS_PORT=6379
+   export REDIS_PASSWORD=your_redis_password
+   
+   # 文件下载URL
+   export FILE_DOWNLOAD_BASE_URL=https://your-domain.com
+   ```
+
 ## 📝 开发规范
 
 ### 代码风格
@@ -384,6 +414,11 @@ dify:
 - 使用 Lombok 简化代码
 - 统一的异常处理和响应格式
 - 完整的日志记录
+
+### 架构设计
+- **循环依赖处理**: 使用独立的配置类管理Bean，避免循环依赖
+- **配置分离**: 将不同职责的配置分离到独立的配置类中
+- **依赖注入**: 优先使用构造器注入，提高代码可测试性
 
 ### API 设计规范
 - RESTful API 设计
@@ -410,6 +445,16 @@ dify:
 ## 📞 联系方式
 
 如有问题或建议，请联系项目维护者。
+
+## 🔄 最新更新
+
+### v0.0.1-SNAPSHOT (2025-08-05)
+- ✅ 修复了Spring Security循环依赖问题
+- ✅ 优化了文件批量下载功能，统一使用.docx后缀
+- ✅ 新增了PasswordConfig配置类
+- ✅ 完善了报表统计功能
+- ✅ 优化了邮件服务配置
+- ✅ 更新了Dify服务集成
 
 ## 📄 许可证
 
