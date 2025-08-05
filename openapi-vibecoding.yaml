@@ -1,0 +1,694 @@
+openapi: 3.0.3
+info:
+  title: VibeCoding Backend API
+  description: 基于 Spring Boot 3.4 + JDK 21 的现代化后端 API 服务，支持智能简历转换、用户认证、文件处理等功能
+  version: 1.0.0
+  contact:
+    name: VibeCode Team
+    email: support@vibecoding.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api
+    description: 开发环境
+  - url: https://vibecoding-api.aistudio.ltd/api
+    description: 生产环境
+
+paths:
+  # 认证相关接口
+  /auth/send-verification-code:
+    post:
+      tags:
+        - 认证
+      summary: 发送邮箱验证码
+      description: 向指定邮箱发送验证码
+      operationId: sendVerificationCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+      responses:
+        '200':
+          description: 验证码发送成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+
+  /auth/login-or-register:
+    post:
+      tags:
+        - 认证
+      summary: 邮箱验证码登录/注册
+      description: 使用邮箱验证码进行登录或注册，如果用户不存在则自动注册
+      operationId: loginOrRegister
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登录/注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: 验证码错误或已过期
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+
+  /auth/logout:
+    post:
+      tags:
+        - 认证
+      summary: 用户登出
+      description: 用户登出，清除认证状态
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 登出成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+
+  # 用户相关接口
+  /user/info:
+    get:
+      tags:
+        - 用户
+      summary: 获取用户信息
+      description: 获取当前登录用户的详细信息
+      operationId: getUserInfo
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 获取用户信息成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoResult'
+
+  # 文件相关接口
+  /file/upload:
+    post:
+      tags:
+        - 文件
+      summary: 文件上传
+      description: 上传文件到服务器，支持多文件上传
+      operationId: uploadFiles
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: 要上传的文件列表
+      responses:
+        '200':
+          description: 文件上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileUploadResult'
+        '400':
+          description: 文件上传失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+
+  /file/files/downloads:
+    post:
+      tags:
+        - 文件
+      summary: 批量文件下载
+      description: 批量下载文件，多个文件会自动压缩为ZIP包
+      operationId: batchDownload
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchDownloadRequest'
+      responses:
+        '200':
+          description: 文件下载成功
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: 未授权
+        '404':
+          description: 文件不存在
+
+  /file/files/{path}/{filename}:
+    get:
+      tags:
+        - 文件
+      summary: 单个文件下载
+      description: 下载指定路径和文件名的文件
+      operationId: downloadFile
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 文件路径
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 文件名
+      responses:
+        '200':
+          description: 文件下载成功
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 文件不存在
+
+  # 简历相关接口
+  /resume/generate:
+    post:
+      tags:
+        - 简历
+      summary: 简历生成
+      description: 解析简历并生成标准化的Word文档
+      operationId: generateResume
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResumeParseRequest'
+      responses:
+        '200':
+          description: 简历生成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResumeGenerateResult'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+        '500':
+          description: 简历生成失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+
+  /resume/download/{filename}:
+    get:
+      tags:
+        - 简历
+      summary: 下载生成的简历文件
+      description: 下载生成的简历Word文档（web前端不要使用该接口，请使用批量文件下载）
+      operationId: downloadResume
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 文件名
+      responses:
+        '200':
+          description: 文件下载成功
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 文件不存在
+
+  # 系统相关接口
+  /system/health:
+    get:
+      tags:
+        - 系统
+      summary: 系统健康检查
+      description: 检查系统运行状态
+      operationId: healthCheck
+      responses:
+        '200':
+          description: 系统运行正常
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResult'
+
+  /system/config:
+    get:
+      tags:
+        - 系统
+      summary: 获取系统配置
+      description: 获取系统配置信息
+      operationId: getConfig
+      responses:
+        '200':
+          description: 获取系统配置成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResult'
+
+  /system/create-file-table:
+    post:
+      tags:
+        - 系统
+      summary: 创建文件信息表
+      description: 创建文件信息数据库表
+      operationId: createFileTable
+      responses:
+        '200':
+          description: 表创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+
+  # 报表相关接口
+  /report/yearly-daily-calls:
+    get:
+      tags:
+        - 报表
+      summary: 获取用户一年内每天调用接口的累计次数
+      description: 获取用户指定年份内每天调用接口的累计次数（只返回有调用记录的日期）
+      operationId: getYearlyDailyCallCount
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 2025
+          description: 年份，如2025，默认当前年份
+      responses:
+        '200':
+          description: 获取统计数据成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YearlyDailyCallResult'
+        '404':
+          description: 用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # 请求DTO
+    EmailVerificationRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: 邮箱地址
+          example: "user@example.com"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - verificationCode
+      properties:
+        email:
+          type: string
+          format: email
+          description: 邮箱地址
+          example: "user@example.com"
+        verificationCode:
+          type: string
+          minLength: 6
+          maxLength: 6
+          description: 验证码
+          example: "123456"
+
+    ResumeParseRequest:
+      type: object
+      required:
+        - fileName
+      properties:
+        fileName:
+          type: string
+          description: 简历文件名
+          example: "resume_80eae4a028d1468baf292a4a460ad5df.docx"
+        responseMode:
+          type: string
+          default: "streaming"
+          description: 响应模式
+          example: "blocking"
+
+    BatchDownloadRequest:
+      type: object
+      required:
+        - filenames
+      properties:
+        filenames:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+          description: 文件名列表
+          example: ["file1.docx", "file2.pdf"]
+
+    # 响应DTO
+    UserInfoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 用户ID
+          example: 1
+        username:
+          type: string
+          description: 用户名
+          example: "admin"
+        email:
+          type: string
+          format: email
+          description: 邮箱
+          example: "admin@example.com"
+        nickname:
+          type: string
+          description: 昵称
+          example: "管理员"
+        avatar:
+          type: string
+          description: 头像
+          example: "https://example.com/avatar.jpg"
+        role:
+          type: string
+          description: 角色
+          example: "ADMIN"
+        status:
+          type: integer
+          description: 状态：0-禁用，1-启用
+          example: 1
+        lastLoginTime:
+          type: string
+          format: date-time
+          description: 最后登录时间
+          example: "2025-01-15T10:30:00"
+        createTime:
+          type: string
+          format: date-time
+          description: 创建时间
+          example: "2025-01-01T00:00:00"
+
+    # 统一响应格式
+    Result:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 响应码
+          example: 200
+        message:
+          type: string
+          description: 响应消息
+          example: "操作成功"
+        data:
+          description: 响应数据
+        timestamp:
+          type: integer
+          format: int64
+          description: 时间戳
+          example: 1754243158837
+
+    # 特定响应类型
+    LoginResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "登录成功"
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              description: JWT token
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            isNewUser:
+              type: boolean
+              description: 是否新用户
+              example: false
+            user:
+              $ref: '#/components/schemas/UserInfoResponse'
+        timestamp:
+          type: integer
+          format: int64
+          example: 1754243158837
+
+    UserInfoResult:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "获取用户信息成功"
+        data:
+          $ref: '#/components/schemas/UserInfoResponse'
+        timestamp:
+          type: integer
+          format: int64
+          example: 1754243158837
+
+    FileUploadResult:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "文件上传成功"
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              filename:
+                type: string
+                description: 文件名
+                example: "resume_80eae4a028d1468baf292a4a460ad5df.docx"
+              fileUrl:
+                type: string
+                description: 文件URL
+                example: ""
+        timestamp:
+          type: integer
+          format: int64
+          example: 1754243158837
+
+    ResumeGenerateResult:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "简历生成成功"
+        data:
+          type: string
+          description: 生成的文件下载URL
+          example: "http://localhost:8080/api/file/files/filetarget/resume_80eae4a028d1468baf292a4a460ad5df.docx"
+        timestamp:
+          type: integer
+          format: int64
+          example: 1754243158837
+
+    HealthResult:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "系统运行正常"
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              example: "UP"
+            environment:
+              type: string
+              example: "development"
+            version:
+              type: string
+              example: "1.0.0"
+            timestamp:
+              type: integer
+              format: int64
+              example: 1754243158837
+        timestamp:
+          type: integer
+          format: int64
+          example: 1754243158837
+
+    ConfigResult:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "获取系统配置成功"
+        data:
+          type: object
+          properties:
+            appName:
+              type: string
+              example: "VibeCode Backend"
+            version:
+              type: string
+              example: "1.0.0"
+            environment:
+              type: string
+              example: "development"
+            port:
+              type: integer
+              example: 8080
+        timestamp:
+          type: integer
+          format: int64
+          example: 1754243158837
+
+    YearlyDailyCallResult:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "获取2025年每天调用次数统计成功"
+        data:
+          type: object
+          properties:
+            userEmail:
+              type: string
+              format: email
+              example: "user@example.com"
+            userId:
+              type: integer
+              format: int64
+              example: 1
+            year:
+              type: integer
+              example: 2025
+            totalDays:
+              type: integer
+              description: 有调用记录的总天数
+              example: 10
+            dailyCallCount:
+              type: array
+              items:
+                type: object
+                properties:
+                  callDate:
+                    type: string
+                    format: date
+                    description: 调用日期
+                    example: "2025-08-04"
+                  totalCallCount:
+                    type: integer
+                    description: 总调用次数
+                    example: 5
+                  successCount:
+                    type: integer
+                    description: 成功次数
+                    example: 4
+                  failCount:
+                    type: integer
+                    description: 失败次数
+                    example: 1
+                  avgResponseTime:
+                    type: integer
+                    description: 平均响应时间（毫秒）
+                    example: 2300
+        timestamp:
+          type: integer
+          format: int64
+          example: 1754243158837
+
+tags:
+  - name: 认证
+    description: 用户认证相关接口
+  - name: 用户
+    description: 用户信息管理接口
+  - name: 文件
+    description: 文件上传下载相关接口
+  - name: 简历
+    description: 简历转换相关接口
+  - name: 系统
+    description: 系统管理相关接口
+  - name: 报表
+    description: 数据统计报表接口 
