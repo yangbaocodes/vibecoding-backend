@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.Valid;
-import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -113,8 +113,8 @@ public class FileController {
             // 设置响应头
             HttpHeaders headers = new HttpHeaders();
             String filename = filePath.getFileName().toString();
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, 
-                    "attachment; filename=\"" + filename + "\"");
+            headers.add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION);
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + URLEncoder.encode(filename, "UTF-8"));
             
             // 根据文件类型设置Content-Type
             String contentType = getContentType(filename);
@@ -165,8 +165,8 @@ public class FileController {
             
             // 设置响应头
             HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, 
-                    "attachment; filename=\"" + filename + "\"");
+            headers.add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION);
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + URLEncoder.encode(filename, "UTF-8"));
             
             // 根据文件类型设置Content-Type
             String contentType = getContentType(filename);
