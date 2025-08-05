@@ -5,10 +5,10 @@ import com.vibecoding.vibecoding_backend.entity.User;
 import com.vibecoding.vibecoding_backend.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * 用户服务类
@@ -22,6 +22,7 @@ public class UserService {
 
     private final UserMapper userMapper;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * 通过邮箱查找用户
@@ -58,6 +59,49 @@ public class UserService {
         userMapper.insert(user);
         log.info("创建新用户: {}", user.getEmail());
         return user;
+    }
+
+    /**
+     * 更新用户信息
+     *
+     * @param user 用户信息
+     */
+    public void updateUser(User user) {
+        user.setUpdateTime(LocalDateTime.now());
+        userMapper.updateById(user);
+        log.info("更新用户信息: {}", user.getEmail());
+    }
+
+    /**
+     * 修改用户密码
+     *
+     * @param userId      用户ID
+     * @param oldPassword 旧密码
+     * @param newPassword 新密码
+     * @return 是否修改成功
+     */
+    public boolean changePassword(Long userId, String oldPassword, String newPassword) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            return false;
+        }
+
+        // 由于当前系统使用验证码登录，密码字段为空
+        // 这里提供一个简单的密码验证逻辑
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+                return false;
+            }
+        }
+
+        // 加密新密码
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        user.setPassword(encodedPassword);
+        user.setUpdateTime(LocalDateTime.now());
+        
+        int result = userMapper.updateById(user);
+        log.info("修改用户密码: {}", user.getEmail());
+        return result > 0;
     }
 
     /**

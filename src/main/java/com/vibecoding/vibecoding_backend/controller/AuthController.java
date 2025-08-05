@@ -3,7 +3,6 @@ package com.vibecoding.vibecoding_backend.controller;
 import com.vibecoding.vibecoding_backend.common.Result;
 import com.vibecoding.vibecoding_backend.dto.EmailVerificationRequest;
 import com.vibecoding.vibecoding_backend.dto.LoginRequest;
-import com.vibecoding.vibecoding_backend.dto.RegisterRequest;
 import com.vibecoding.vibecoding_backend.dto.UserInfoResponse;
 import com.vibecoding.vibecoding_backend.entity.User;
 import com.vibecoding.vibecoding_backend.security.JwtUtils;
@@ -103,8 +102,8 @@ public class AuthController {
     public Result<Void> logout() {
         log.info("用户登出");
         
-        // TODO: 实现登出逻辑（清除token等）
-        // 由于使用JWT，客户端只需要删除token即可
+        // JWT是无状态的，客户端删除token即可完成登出
+        // 如果需要服务端控制，可以考虑将token加入黑名单
         
         return Result.<Void>success("登出成功", null);
     }

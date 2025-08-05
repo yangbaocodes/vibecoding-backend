@@ -2,10 +2,15 @@ package com.vibecoding.vibecoding_backend.controller;
 
 import com.vibecoding.vibecoding_backend.common.Result;
 import com.vibecoding.vibecoding_backend.dto.UserInfoResponse;
+import com.vibecoding.vibecoding_backend.entity.User;
+import com.vibecoding.vibecoding_backend.service.UserService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
+import jakarta.validation.Valid;
 
 /**
  * 用户控制器
@@ -15,7 +20,10 @@ import java.time.LocalDateTime;
 @Slf4j
 @RestController
 @RequestMapping("/user")
+@RequiredArgsConstructor
 public class UserController {
+
+    private final UserService userService;
 
     /**
      * 获取用户信息
@@ -24,31 +32,65 @@ public class UserController {
     public Result<UserInfoResponse> getUserInfo() {
         log.info("获取用户信息");
         
-        // TODO: 从JWT token中获取用户信息
-        // 模拟用户信息
-        UserInfoResponse user = new UserInfoResponse()
-                .setId(1L)
-                .setUsername("admin")
-                .setEmail("admin@example.com")
-                .setNickname("管理员")
-                .setRole("ADMIN")
-                .setStatus(1)
-                .setLastLoginTime(LocalDateTime.now())
-                .setCreateTime(LocalDateTime.now());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return Result.error("用户未认证");
+        }
         
-        return Result.success(user);
+        String email = authentication.getName();
+        User user = userService.findByEmail(email);
+        
+        if (user == null) {
+            return Result.error("用户不存在");
+        }
+        
+        UserInfoResponse userInfo = new UserInfoResponse()
+                .setId(user.getId())
+                .setUsername(user.getUsername())
+                .setEmail(user.getEmail())
+                .setNickname(user.getNickname())
+                .setRole(user.getRole())
+                .setStatus(user.getStatus())
+                .setLastLoginTime(user.getLastLoginTime())
+                .setCreateTime(user.getCreateTime());
+        
+        return Result.success(userInfo);
     }
 
     /**
      * 更新用户信息
      */
     @PutMapping("/info")
-    public Result<UserInfoResponse> updateUserInfo(@RequestBody UserInfoResponse request) {
+    public Result<UserInfoResponse> updateUserInfo(@Valid @RequestBody UserInfoResponse request) {
         log.info("更新用户信息: {}", request.getUsername());
         
-        // TODO: 实现更新用户信息逻辑
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return Result.error("用户未认证");
+        }
         
-        return Result.success("更新成功", request);
+        String email = authentication.getName();
+        User user = userService.findByEmail(email);
+        
+        if (user == null) {
+            return Result.error("用户不存在");
+        }
+        
+        // 更新用户信息
+        user.setNickname(request.getNickname());
+        userService.updateUser(user);
+        
+        UserInfoResponse userInfo = new UserInfoResponse()
+                .setId(user.getId())
+                .setUsername(user.getUsername())
+                .setEmail(user.getEmail())
+                .setNickname(user.getNickname())
+                .setRole(user.getRole())
+                .setStatus(user.getStatus())
+                .setLastLoginTime(user.getLastLoginTime())
+                .setCreateTime(user.getCreateTime());
+        
+        return Result.success("更新成功", userInfo);
     }
 
     /**
@@ -61,8 +103,29 @@ public class UserController {
         String oldPassword = request.get("oldPassword");
         String newPassword = request.get("newPassword");
         
-        // TODO: 实现修改密码逻辑
+        if (oldPassword == null || newPassword == null) {
+            return Result.error("密码参数不能为空");
+        }
         
-        return Result.<Void>success("密码修改成功", null);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return Result.error("用户未认证");
+        }
+        
+        String email = authentication.getName();
+        User user = userService.findByEmail(email);
+        
+        if (user == null) {
+            return Result.error("用户不存在");
+        }
+        
+        // 验证旧密码并更新新密码
+        boolean success = userService.changePassword(user.getId(), oldPassword, newPassword);
+        
+        if (success) {
+            return Result.<Void>success("密码修改成功", null);
+        } else {
+            return Result.error("旧密码错误或修改失败");
+        }
     }
 }
