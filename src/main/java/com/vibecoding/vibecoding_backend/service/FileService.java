@@ -263,7 +263,7 @@ public class FileService {
                     // 获取不带扩展名的文件名，然后统一添加.docx后缀
                     String originalName = fileInfo.getFileRealName();
                     String nameWithoutExtension = getFileNameWithoutExtension(originalName);
-                    String newFileName = "new_" + nameWithoutExtension + ".docx";
+                    String newFileName = "Cognizant_" + nameWithoutExtension + ".docx";
                     ZipEntry zipEntry = new ZipEntry(newFileName);
                     zipOut.putNextEntry(zipEntry);
                     
