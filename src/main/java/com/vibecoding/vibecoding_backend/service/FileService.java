@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +19,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * 文件服务类
@@ -41,10 +45,6 @@ public class FileService {
      */
     private static final int MAX_FILES = 10;
 
-    /**
-     * 文件存储目录
-     */
-    private static final String FILE_STORAGE_PATH = "filesource";
 
     /**
      * 上传文件
@@ -161,6 +161,118 @@ public class FileService {
         }
 
         return filePath;
+    }
+
+    /**
+     * 创建批量下载文件
+     *
+     * @param filenames 文件名列表
+     * @param username 用户名
+     * @return 文件路径
+     */
+    public Path createBatchDownloadFile(List<String> filenames, String username) {
+        if (filenames == null || filenames.isEmpty()) {
+            throw new IllegalArgumentException("文件名列表不能为空");
+        }
+
+        if (filenames.size() > MAX_FILES) {
+            throw new IllegalArgumentException("单次最多下载" + MAX_FILES + "个文件");
+        }
+
+        // 查询用户上传的文件信息
+        List<FileInfo> userFiles = fileInfoMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<FileInfo>()
+                        .eq("created_by", username)
+                        .in("filename", filenames)
+                        .eq("is_translated", 1) // 只下载已转换的文件
+        );
+
+        if (userFiles.isEmpty()) {
+            throw new IllegalArgumentException("未找到可下载的文件");
+        }
+
+        // 检查是否所有请求的文件都存在
+        if (userFiles.size() != filenames.size()) {
+            log.warn("部分文件不存在或未转换，请求文件数: {}, 找到文件数: {}", filenames.size(), userFiles.size());
+            // 记录未找到的文件
+            List<String> foundFilenames = userFiles.stream()
+                    .map(FileInfo::getFilename)
+                    .toList();
+            List<String> notFoundFiles = filenames.stream()
+                    .filter(filename -> !foundFilenames.contains(filename))
+                    .toList();
+            log.warn("未找到的文件: {}", notFoundFiles);
+        }
+
+        try {
+            if (userFiles.size() == 1) {
+                // 单个文件直接返回文件路径
+                FileInfo fileInfo = userFiles.get(0);
+                String filePath = fileInfo.getTargetPath();
+                Path path = Paths.get(filePath);
+                
+                if (!Files.exists(path)) {
+                    throw new IllegalArgumentException("文件不存在: " + filePath);
+                }
+                
+                return path;
+            } else {
+                // 多个文件压缩后返回
+                String zipFilename = "batch_download_" + System.currentTimeMillis() + ".zip";
+                String zipPath = fileConfig.getOutputPath() + "/" + zipFilename;
+                
+                createZipFile(userFiles, zipPath);
+                
+                Path path = Paths.get(zipPath);
+                if (!Files.exists(path)) {
+                    throw new RuntimeException("压缩文件创建失败: " + zipPath);
+                }
+                
+                return path;
+            }
+        } catch (Exception e) {
+            log.error("批量下载失败", e);
+            throw new RuntimeException("批量下载失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 创建压缩文件
+     *
+     * @param fileInfos 文件信息列表
+     * @param zipPath 压缩文件路径
+     * @throws IOException IO异常
+     */
+    private void createZipFile(List<FileInfo> fileInfos, String zipPath) throws IOException {
+        File zipFile = new File(zipPath);
+        
+        // 确保目录存在
+        zipFile.getParentFile().mkdirs();
+        
+        try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(zipFile))) {
+            for (FileInfo fileInfo : fileInfos) {
+                String targetPath = fileInfo.getTargetPath();
+                File targetFile = new File(targetPath);
+                
+                if (!targetFile.exists()) {
+                    log.warn("源文件不存在: {}", targetPath);
+                    continue;
+                }
+                
+                try (FileInputStream fis = new FileInputStream(targetFile)) {
+                    ZipEntry zipEntry = new ZipEntry("new_"+fileInfo.getFileRealName());
+                    zipOut.putNextEntry(zipEntry);
+                    
+                    byte[] buffer = new byte[1024];
+                    int length;
+                    while ((length = fis.read(buffer)) >= 0) {
+                        zipOut.write(buffer, 0, length);
+                    }
+                }
+            }
+        }
+        
+        log.info("压缩文件创建成功: {}", zipPath);
     }
 
     /**

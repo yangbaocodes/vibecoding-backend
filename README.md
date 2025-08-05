@@ -36,7 +36,8 @@ backend/
 │   │   ├── CorsConfig.java                  # 跨域配置
 │   │   ├── FileConfig.java                  # 文件配置
 │   │   ├── MyBatisPlusConfig.java           # MyBatis-Plus配置
-│   │   └── RedisConfig.java                 # Redis配置
+│   │   ├── RedisConfig.java                 # Redis配置
+│   │   └── DifyConfig.java                  # Dify服务配置
 │   ├── controller/                          # 控制器层
 │   │   ├── AuthController.java              # 认证控制器
 │   │   ├── SystemController.java            # 系统控制器
@@ -49,7 +50,9 @@ backend/
 │   │   ├── RegisterRequest.java             # 注册请求DTO
 │   │   ├── ResumeParseRequest.java          # 简历解析请求DTO
 │   │   ├── ResumeInfoResponse.java          # 简历信息响应DTO
-│   │   └── UserInfoResponse.java            # 用户信息响应DTO
+│   │   ├── UserInfoResponse.java            # 用户信息响应DTO
+│   │   ├── BatchDownloadRequest.java        # 批量下载请求DTO
+│   │   └── BatchDownloadResponse.java       # 批量下载响应DTO
 │   ├── entity/                              # 实体类
 │   │   ├── User.java                        # 用户实体
 │   │   ├── FileInfo.java                    # 文件信息实体
@@ -93,183 +96,59 @@ backend/
 └── src/test/                                # 测试代码
 ```
 
-## 🛠️ 环境要求
+## 🔧 核心功能
 
-- **JDK**: 21+
-- **Maven**: 3.8+
-- **MySQL**: 8.0+
-- **Redis**: 6.0+
+### 用户认证系统
+- **邮箱验证码登录**: 支持邮箱验证码登录和注册
+- **JWT 认证**: 无状态认证，支持自动刷新
+- **用户管理**: 用户信息管理、密码修改
 
-## 🚦 快速开始
+### 文件处理系统
+- **文件上传**: 支持多文件上传，自动生成UUID文件名
+- **文件下载**: 支持单个文件和批量文件下载
+- **文件管理**: 文件信息数据库存储和管理
 
-### 1. 环境准备
+### 简历转换系统
+- **AI 解析**: 集成 Dify 服务解析简历信息
+- **模板生成**: 基于 Cognizant 模板生成标准化简历
+- **状态跟踪**: 实时跟踪转换状态和进度
 
-```bash
-# 安装 JDK 21
-# 推荐使用 Eclipse Temurin 或 Amazon Corretto
+### 报表统计系统
+- **操作日志**: 记录用户操作和系统事件
+- **数据统计**: 生成各类统计报表
+- **调用统计**: 统计用户API调用次数和响应时间
 
-# 启动 MySQL 服务
-mysql -u root -p
-
-# 启动 Redis 服务
-redis-server
-```
-
-### 2. 数据库初始化
-
-```bash
-# 创建数据库并执行初始化脚本
-mysql -u root -p < src/main/resources/db/migration/init.sql
-```
-
-### 3. 配置文件
-
-复制并修改配置文件：
-
-```yaml
-# application.yml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/vibecoding_dev
-    username: root
-    password: your_password
-  
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      password: your_redis_password
-```
-
-### 4. 运行项目
-
-```bash
-# 使用 Maven 运行
-./mvnw spring-boot:run
-
-# 或者打包后运行
-./mvnw clean package
-java -jar target/vibecoding-backend-0.0.1-SNAPSHOT.jar
-```
-
-项目启动后访问：http://localhost:8080/api
-
-### 5. 文件下载URL配置
-
-系统支持根据不同环境配置不同的文件下载基础URL：
-
-**开发环境配置** (`application.yml`):
-```yaml
-app:
-  file:
-    download-base-url: http://localhost:8080
-    storage-path: filesource
-    output-path: filetarget
-```
-
-**生产环境配置** (`application-prod.yml`):
-```yaml
-app:
-  file:
-    download-base-url: ${FILE_DOWNLOAD_BASE_URL:https://your-domain.com}
-    storage-path: filesource
-    output-path: filetarget
-```
-
-**环境变量配置**:
-```bash
-# 设置生产环境文件下载基础URL
-export FILE_DOWNLOAD_BASE_URL=https://api.yourdomain.com
-```
-
-**配置说明**:
-- `download-base-url`: 文件下载的基础URL，根据不同环境配置不同域名
-- `storage-path`: 文件存储目录，默认为 `filesource`
-- `output-path`: 文件输出目录，默认为 `filetarget`
-- 如果未配置 `download-base-url`，系统将使用相对路径
-
-### 6. 跨域配置
-
-系统支持跨域请求配置：
-
-**开发环境配置**:
-```yaml
-app:
-  cors:
-    allowed-origins: 
-      - "*"  # 允许所有源
-    allowed-methods:
-      - GET
-      - POST
-      - PUT
-      - DELETE
-      - OPTIONS
-    allowed-headers: "*"
-    allow-credentials: true
-```
-
-**生产环境配置**:
-```yaml
-app:
-  cors:
-    allowed-origins: 
-      - "*"  # 允许所有源
-    allowed-methods:
-      - GET
-      - POST
-      - PUT
-      - DELETE
-      - OPTIONS
-    allowed-headers: "*"
-    allow-credentials: true
-```
-
-**跨域配置说明**:
-- `allowed-origins`: 允许的跨域源，`"*"` 表示允许所有源
-- `allowed-methods`: 允许的HTTP方法
-- `allowed-headers`: 允许的请求头，`"*"` 表示允许所有头
-- `allow-credentials`: 是否允许发送Cookie和认证信息
-
-## 📋 API 接口
+## 📋 API 接口文档
 
 ### 认证相关
 
 #### 发送邮箱验证码
 - **接口**: `POST /api/auth/send-verification-code`
-- **认证**: 无需token验证
 - **参数**: 
-  - `email`: 邮箱地址
+  ```json
+  {
+    "email": "user@example.com"
+  }
+  ```
+- **认证**: 无需token验证
 - **返回**: 验证码发送结果
-- **示例**:
-```bash
-curl -X POST http://localhost:8080/api/auth/send-verification-code \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com"}'
-```
 
-#### 登录/注册
+#### 邮箱验证码登录/注册
 - **接口**: `POST /api/auth/login-or-register`
-- **认证**: 无需token验证
 - **参数**: 
-  - `email`: 邮箱地址
-  - `verificationCode`: 验证码
-- **返回**: JWT token和用户信息
-- **示例**:
-```bash
-curl -X POST http://localhost:8080/api/auth/login-or-register \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "verificationCode": "123456"}'
-```
+  ```json
+  {
+    "email": "user@example.com",
+    "verificationCode": "123456"
+  }
+  ```
+- **认证**: 无需token验证
+- **返回**: JWT token 和用户信息
 
 #### 用户登出
 - **接口**: `POST /api/auth/logout`
 - **认证**: 需要JWT token认证
 - **返回**: 登出结果
-- **示例**:
-```bash
-curl -X POST http://localhost:8080/api/auth/logout \
-  -H "Authorization: Bearer <your-jwt-token>"
-```
 
 ### 用户相关
 
@@ -277,145 +156,68 @@ curl -X POST http://localhost:8080/api/auth/logout \
 - **接口**: `GET /api/user/info`
 - **认证**: 需要JWT token认证
 - **返回**: 用户详细信息
-- **示例**:
-```bash
-curl -X GET http://localhost:8080/api/user/info \
-  -H "Authorization: Bearer <your-jwt-token>"
-```
-
-#### 更新用户信息
-- **接口**: `PUT /api/user/info`
-- **认证**: 需要JWT token认证
-- **参数**: 用户信息对象
-- **返回**: 更新结果
-- **示例**:
-```bash
-curl -X PUT http://localhost:8080/api/user/info \
-  -H "Authorization: Bearer <your-jwt-token>" \
-  -H "Content-Type: application/json" \
-  -d '{"nickname": "新昵称"}'
-```
-
-#### 修改密码
-- **接口**: `PUT /api/user/password`
-- **认证**: 需要JWT token认证
-- **参数**: 
-  - `oldPassword`: 旧密码
-  - `newPassword`: 新密码
-- **返回**: 修改结果
-- **示例**:
-```bash
-curl -X PUT http://localhost:8080/api/user/password \
-  -H "Authorization: Bearer <your-jwt-token>" \
-  -H "Content-Type: application/json" \
-  -d '{"oldPassword": "123456", "newPassword": "654321"}'
-```
-
-### 系统相关
-
-#### 健康检查
-- **接口**: `GET /api/system/health`
-- **认证**: 无需token验证
-- **返回**: 系统健康状态
-- **示例**:
-```bash
-curl -X GET http://localhost:8080/api/system/health
-```
-
-#### 获取系统配置
-- **接口**: `GET /api/system/config`
-- **认证**: 无需token验证
-- **返回**: 系统配置信息
-- **示例**:
-```bash
-curl -X GET http://localhost:8080/api/system/config
-```
 
 ### 文件相关
 
 #### 文件上传
 - **接口**: `POST /api/file/upload`
-- **参数**: `files` (MultipartFile数组，最多10个文件)
-- **支持格式**: docx、pdf
-- **返回**: JSON数组，包含filename和file_url
-- **示例**:
-```bash
-curl -X POST http://localhost:8080/api/file/upload \
-  -H "Authorization: Bearer <token>" \
-  -F "files=@document1.docx" \
-  -F "files=@document2.pdf"
-```
-
-#### 文件下载
-- **接口**: `GET /api/file/files/{path}/{filename}`
-- **参数**: path (路径), filename (文件名)
-- **认证**: 无需token验证
-- **返回**: 文件流，浏览器自动下载
-- **示例**:
-```bash
-curl -O http://localhost:8080/api/file/files/filesource/uuid-filename.docx
-```
-
-### 简历生成相关
-
-#### 生成简历Word文档
-- **接口**: `POST /api/resume/generate`
+- **参数**: MultipartFile[] files
 - **认证**: 需要JWT token认证
-- **参数**: JSON格式
-  - `fileName` (文件名，必填) - 已上传到filesource目录的文件名
-  - `responseMode` (响应模式，可选，默认: "streaming")
+- **返回**: 上传文件信息列表
+
+#### 批量文件下载
+- **接口**: `POST /api/file/files/downloads`
+- **参数**: 
+  ```json
+  {
+    "filenames": ["file1.docx", "file2.pdf"]
+  }
+  ```
+- **认证**: 需要JWT token认证
+- **返回**: ZIP压缩包文件流
+
+#### 单个文件下载
+- **接口**: `GET /api/file/files/{path}/{filename}`
+- **参数**: path (文件路径), filename (文件名)
+- **认证**: 无需token验证
+- **返回**: 文件流
+
+### 简历相关
+
+#### 简历生成
+- **接口**: `POST /api/resume/generate`
+- **参数**: 
+  ```json
+  {
+    "fileName": "resume_80eae4a028d1468baf292a4a460ad5df.docx",
+    "responseMode": "blocking"
+  }
+  ```
+- **认证**: 需要JWT token认证
 - **返回**: 生成的文件下载URL
-- **示例**:
-```bash
-curl -X POST http://localhost:8080/api/resume/generate \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-jwt-token>" \
-  -d '{
-    "fileName": "1ef5e775-405d-447d-b3ec-1742850355a3.docx",
-    "responseMode": "streaming"
-  }'
-```
 
-**简化参数示例**:
-```bash
-curl -X POST http://localhost:8080/api/resume/generate \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-jwt-token>" \
-  -d '{"fileName": "1ef5e775-405d-447d-b3ec-1742850355a3.docx"}'
-```
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "简历生成成功",
-  "data": "http://localhost:8080/api/file/files/filetarget/resume_80eae4a028d1468baf292a4a460ad5df.docx",
-  "timestamp": 1754243158837
-}
-```
-
-**功能说明**:
-- 根据已上传的文件名生成简历Word文档
-- 自动解析简历信息并生成标准Word文档
-- 使用POI-TL模板引擎，支持复杂的文档格式
-- 自动创建输出目录和生成唯一文件名
-- 生成后自动更新 `sys_file_info` 表中的 `targetPath` 和 `isTranslated` 字段
-- 完整的错误处理和日志记录
-
-#### 下载生成的简历文件
+#### 下载生成的简历文件（*web前端不要只要该接口，请使用批量文件下载*）
 - **接口**: `GET /api/resume/download/{filename}`
 - **参数**: filename (文件名)
 - **认证**: 无需token验证
 - **返回**: Word文档文件流
-- **示例**:
-```bash
-curl -O http://localhost:8080/api/resume/download/resume_80eae4a028d1468baf292a4a460ad5df.docx
-```
 
-#### 简历生成健康检查
-- **接口**: `GET /api/resume/health`
+### 系统相关
+
+#### 系统健康检查
+- **接口**: `GET /api/system/health`
 - **认证**: 无需token验证
-- **返回**: 服务状态
+- **返回**: 系统状态信息
+
+#### 获取系统配置
+- **接口**: `GET /api/system/config`
+- **认证**: 无需token验证
+- **返回**: 系统配置信息
+
+#### 创建文件信息表
+- **接口**: `POST /api/system/create-file-table`
+- **认证**: 无需token验证
+- **返回**: 表创建结果
 
 ### 报表相关
 
@@ -425,16 +227,6 @@ curl -O http://localhost:8080/api/resume/download/resume_80eae4a028d1468baf292a4
 - **参数**: 
   - `year` (可选): 年份，如2025，默认当前年份
 - **返回**: 用户指定年份内每天调用接口的累计次数（只返回有调用记录的日期）
-- **示例**:
-```bash
-# 获取当前年份的统计数据
-curl -X GET http://localhost:8080/api/report/yearly-daily-calls \
-  -H "Authorization: Bearer <your-jwt-token>"
-
-# 获取指定年份的统计数据
-curl -X GET "http://localhost:8080/api/report/yearly-daily-calls?year=2025" \
-  -H "Authorization: Bearer <your-jwt-token>"
-```
 
 **响应示例**:
 ```json
@@ -460,13 +252,6 @@ curl -X GET "http://localhost:8080/api/report/yearly-daily-calls?year=2025" \
         "successCount": 3,
         "failCount": 0,
         "avgResponseTime": 2100
-      },
-      {
-        "callDate": "2025-07-15",
-        "totalCallCount": 2,
-        "successCount": 2,
-        "failCount": 0,
-        "avgResponseTime": 1900
       }
     ]
   },
@@ -499,29 +284,133 @@ app:
 - 支持不同环境的文件下载URL配置
 - 支持环境变量覆盖（生产环境）
 - 自动构建完整的文件下载URL
-- 统一的文件路径管理
 
-### 跨域配置
-
-CORS配置在 `application.yml` 中：
+### 数据库配置
 
 ```yaml
-app:
-  cors:
-    allowed-origins:
-      - "*"
-    allowed-methods:
-      - GET
-      - POST
-      - PUT
-      - DELETE
-      - OPTIONS
-    allowed-headers: "*"
-    allow-credentials: true
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/vibecoding
+    username: your_username
+    password: your_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
 ```
 
-**跨域配置说明**:
-- `allowed-origins`: 允许的跨域源，`"*"` 表示允许所有源
-- `allowed-methods`: 允许的HTTP方法
-- `allowed-headers`: 允许的请求头，`"*"` 表示允许所有头
-- `allow-credentials`: 是否允许发送Cookie和认证信息
+### Redis 配置
+
+```yaml
+spring:
+  redis:
+    host: localhost
+    port: 6379
+    password: your_redis_password
+    database: 0
+```
+
+### Dify 服务配置
+
+```yaml
+dify:
+  api-url: your_dify_api_url
+  api-key: your_dify_api_key
+```
+
+## 🚀 部署指南
+
+### 环境要求
+- JDK 21+
+- MySQL 8.0+
+- Redis 6.0+
+- Maven 3.6+
+
+### 开发环境启动
+
+1. **配置数据库**
+   ```bash
+   # 创建数据库
+   CREATE DATABASE vibecoding CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   
+   # 执行初始化脚本
+   mysql -u username -p vibecoding < src/main/resources/db/migration/init.sql
+   ```
+
+2. **配置环境变量**
+   ```bash
+   # 设置数据库连接
+   export SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/vibecoding
+   export SPRING_DATASOURCE_USERNAME=your_username
+   export SPRING_DATASOURCE_PASSWORD=your_password
+   
+   # 设置Redis连接
+   export SPRING_REDIS_HOST=localhost
+   export SPRING_REDIS_PORT=6379
+   export SPRING_REDIS_PASSWORD=your_redis_password
+   
+   # 设置Dify服务
+   export DIFY_API_URL=your_dify_api_url
+   export DIFY_API_KEY=your_dify_api_key
+   ```
+
+3. **启动应用**
+   ```bash
+   mvn spring-boot:run
+   ```
+
+### 生产环境部署
+
+1. **打包应用**
+   ```bash
+   mvn clean package -Dmaven.test.skip=true
+   ```
+
+2. **运行应用**
+   ```bash
+   java -jar target/vibecoding-backend-1.0.0.jar
+   ```
+
+3. **使用Docker部署**
+   ```bash
+   # 构建镜像
+   docker build -t vibecoding-backend .
+   
+   # 运行容器
+   docker run -d -p 8080:8080 --name vibecoding-backend vibecoding-backend
+   ```
+
+## 📝 开发规范
+
+### 代码风格
+- 遵循 Spring Boot 最佳实践
+- 使用 Lombok 简化代码
+- 统一的异常处理和响应格式
+- 完整的日志记录
+
+### API 设计规范
+- RESTful API 设计
+- 统一的响应格式
+- 完整的参数验证
+- 详细的错误信息
+
+### 数据库设计
+- 使用 MyBatis-Plus 简化数据访问
+- 统一的命名规范
+- 完整的索引设计
+- 数据完整性约束
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+### 贡献流程
+1. Fork 项目
+2. 创建功能分支
+3. 提交代码
+4. 创建 Pull Request
+
+## 📞 联系方式
+
+如有问题或建议，请联系项目维护者。
+
+## 📄 许可证
+
+本项目采用 MIT 许可证。

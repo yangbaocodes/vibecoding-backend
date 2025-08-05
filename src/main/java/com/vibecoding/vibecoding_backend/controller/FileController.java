@@ -1,6 +1,7 @@
 package com.vibecoding.vibecoding_backend.controller;
 
 import com.vibecoding.vibecoding_backend.common.Result;
+import com.vibecoding.vibecoding_backend.dto.BatchDownloadRequest;
 import com.vibecoding.vibecoding_backend.service.FileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
@@ -73,6 +75,65 @@ public class FileController {
         } catch (Exception e) {
             log.error("文件上传失败", e);
             return Result.error(500, "文件上传失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 批量下载接口
+     *
+     * @param request 批量下载请求
+     * @param authentication 认证信息
+     * @return 文件资源
+     */
+    @PostMapping("/files/downloads")
+    public ResponseEntity<Resource> batchDownload(
+            @Valid @RequestBody BatchDownloadRequest request,
+            Authentication authentication) {
+        
+        try {
+            // 获取当前用户
+            String username = authentication != null ? authentication.getName() : null;
+            if (username == null) {
+                return ResponseEntity.status(401).build();
+            }
+            
+            log.info("批量下载请求: 用户={}, 文件数量={}", username, request.getFilenames().size());
+            
+            // 创建批量下载文件
+            Path filePath = fileService.createBatchDownloadFile(request.getFilenames(), username);
+            
+            // 创建资源
+            Resource resource = new UrlResource(filePath.toUri());
+            
+            if (!resource.exists() || !resource.isReadable()) {
+                log.warn("批量下载文件不存在或不可读: {}", filePath);
+                return ResponseEntity.notFound().build();
+            }
+            
+            // 设置响应头
+            HttpHeaders headers = new HttpHeaders();
+            String filename = filePath.getFileName().toString();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, 
+                    "attachment; filename=\"" + filename + "\"");
+            
+            // 根据文件类型设置Content-Type
+            String contentType = getContentType(filename);
+            headers.setContentType(MediaType.parseMediaType(contentType));
+            
+            log.info("批量下载成功: {}", filePath);
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(resource);
+                    
+        } catch (IllegalArgumentException e) {
+            log.warn("批量下载参数错误: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (MalformedURLException e) {
+            log.error("批量下载文件URL错误", e);
+            return ResponseEntity.internalServerError().build();
+        } catch (Exception e) {
+            log.error("批量下载失败", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 
