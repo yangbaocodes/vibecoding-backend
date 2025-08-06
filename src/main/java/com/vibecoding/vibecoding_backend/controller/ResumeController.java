@@ -16,6 +16,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import com.vibecoding.vibecoding_backend.config.FileConfig;
 
+import jakarta.validation.Valid;
+
 /**
  * 简历控制器
  *
@@ -42,18 +44,31 @@ public class ResumeController {
      */
     @PostMapping("/generate")
     @ReportLog("简历生成")
-    public Result<String> generateResume(@RequestBody ResumeParseRequest request, Authentication authentication) {
+    public Result<String> generateResume(@Valid @RequestBody ResumeParseRequest request, Authentication authentication) {
         
         long startTime = System.currentTimeMillis();
         boolean success = false;
         String errorMessage = null;
         
         try {
-            log.info("收到简历生成请求: {}", request);
+            log.info("收到简历生成请求: {}, targetLanguage: {}, targetFileType: {}", 
+                request, request.getTargetLanguage(), request.getTargetFileType());
 
             // 验证URL
             if (!difyService.validateFileName(request.getFileName())) {
                 return Result.error(400, "无效的简历文件");
+            }
+
+            // 验证目标语言
+            if (!"en".equals(request.getTargetLanguage()) && !"zh".equals(request.getTargetLanguage())) {
+                return Result.error(400, "请求参数targetLanguage只能是 English 或 Chinese");
+            }
+
+            // 验证目标文件类型
+            if (request.getTargetFileType() != null && 
+                !"word".equals(request.getTargetFileType()) && 
+                !"ppt".equals(request.getTargetFileType())) {
+                return Result.error(400, "请求参数targetFileType只能是 word 或 ppt");
             }
 
             String resumeUrl = fileConfig.buildDownloadUrl(fileConfig.getStoragePath(), request.getFileName());
@@ -62,7 +77,9 @@ public class ResumeController {
             ResumeInfoResponse resumeInfo = difyService.parseResumeInfo(
                 resumeUrl, 
                 authentication.getName(), 
-                request.getResponseMode()
+                request.getResponseMode(),
+                request.getTargetLanguage(),
+                request.getTargetFileType()
             );
             
             if (resumeInfo == null) {

@@ -136,8 +136,8 @@ app:
     bearer-token: app-blj7fVtI82UlI0HWyberMKe4
     workflow-path: /workflows/run
     interface-name: getresumeinfo
-    connect-timeout: 10000
-    read-timeout: 30000
+    connect-timeout: 15000  # 连接超时增加到15秒
+    read-timeout: 120000    # 读取超时增加到120秒（2分钟）
   
   cors:
     allowed-origins: 
