@@ -220,7 +220,7 @@ public class UserService {
             String mergedConfig = userConfigValidator.mergeConfig(currentConfig, newConfig);
             
             user.setConfig(mergedConfig);
-            user.setUpdateTime(LocalDateTime.now());·
+            user.setUpdateTime(LocalDateTime.now());
             userMapper.updateById(user);
             log.info("更新用户配置: userId={}, newConfig={}, mergedConfig={}", userId, newConfig, mergedConfig);
             return mergedConfig;
