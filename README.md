@@ -53,6 +53,8 @@ backend/
 │   │   ├── ResumeParseRequest.java          # 简历解析请求DTO
 │   │   ├── ResumeInfoResponse.java          # 简历信息响应DTO
 │   │   ├── UserInfoResponse.java            # 用户信息响应DTO
+│   │   ├── UserConfigRequest.java           # 用户配置请求DTO
+│   │   ├── UserConfigResponse.java          # 用户配置响应DTO
 │   │   ├── BatchDownloadRequest.java        # 批量下载请求DTO
 │   │   ├── BatchDownloadResponse.java       # 批量下载响应DTO
 │   │   └── DifyRequest.java                 # Dify服务请求DTO
@@ -115,6 +117,7 @@ backend/
 - **AI 解析**: 集成 Dify 服务解析简历信息
 - **模板生成**: 基于 Cognizant 模板生成标准化简历
 - **文件命名**: 批量下载时统一使用 "Cognizant_" 前缀和 .docx 后缀
+- **转换历史**: 记录每次简历转换的详细信息，包括转换前后的文件名、类型、语言等
 - **状态跟踪**: 实时跟踪转换状态和进度
 
 ### 报表统计系统
@@ -161,6 +164,36 @@ backend/
 - **认证**: 需要JWT token认证
 - **返回**: 用户详细信息
 
+#### 更新用户配置
+- **接口**: `POST /api/user/updateConfig`
+- **参数**: 
+  ```json
+  {
+    "config": "{\"default_doc_type\":\"docx\"}"
+  }
+  ```
+- **认证**: 需要JWT token认证
+- **返回**: 更新后的完整配置信息
+- **说明**: 支持部分更新，只传递需要修改的字段即可，系统会自动合并现有配置
+
+#### 获取用户配置
+- **接口**: `GET /api/user/getConfig`
+- **认证**: 需要JWT token认证
+- **返回**: 用户配置信息（JSON格式）
+
+#### 获取允许的配置字段列表
+- **接口**: `GET /api/user/config/fields`
+- **认证**: 需要JWT token认证
+- **返回**: 允许的配置字段列表
+
+**配置字段说明**:
+- `default_doc_type`: 默认文档类型（可选值：docx、pdf、txt）
+- `theme`: 主题设置（可选值：light、dark、auto）
+- `language`: 语言设置（可选值：zh、en）
+- `auto_save`: 自动保存（布尔类型）
+- `file_preview`: 文件预览设置（布尔类型）
+- `notification_enabled`: 通知设置（布尔类型）
+
 ### 文件相关
 
 #### 文件上传
@@ -206,6 +239,11 @@ backend/
   - `targetFileType`: 目标文件类型，只能是 "word" 或 "ppt"，默认为 "word"（可选）
 - **认证**: 需要JWT token认证
 - **返回**: 生成的文件下载URL
+- **功能说明**:
+  - 解析简历并生成标准化文档
+  - 自动记录转换历史到 resume_history 表
+  - 记录转换前后的文件名、类型、语言等信息
+  - 记录转换状态（成功/失败）和错误信息
 
 #### 下载生成的简历文件（*web前端不要只要该接口，请使用批量文件下载*）
 - **接口**: `GET /api/resume/download/{filename}`
@@ -460,6 +498,17 @@ app:
 如有问题或建议，请联系项目维护者。
 
 ## 🔄 最新更新
+
+### v0.0.1-SNAPSHOT (2025-08-07)
+- ✅ 新增用户配置功能，支持用户个性化设置
+- ✅ 添加用户配置数据库字段（JSON类型）
+- ✅ 实现用户配置更新和获取接口
+- ✅ 为所有用户设置默认文档类型为docx
+- ✅ 完善用户配置相关的DTO类和业务逻辑
+- ✅ 新增配置字段验证功能，确保只允许预定义字段
+- ✅ 添加配置字段类型和值验证
+- ✅ 新增获取允许配置字段列表接口
+- ✅ 支持部分配置更新，无需传递完整配置
 
 ### v0.0.1-SNAPSHOT (2025-08-06)
 - ✅ 修复了Dify服务调用超时问题

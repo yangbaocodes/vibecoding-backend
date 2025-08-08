@@ -90,4 +90,10 @@ public class User {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
+
+    /**
+     * 用户配置信息（JSON格式）
+     */
+    @TableField("config")
+    private String config;
 }

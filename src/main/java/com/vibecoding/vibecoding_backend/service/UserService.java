@@ -3,6 +3,7 @@ package com.vibecoding.vibecoding_backend.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.vibecoding.vibecoding_backend.entity.User;
 import com.vibecoding.vibecoding_backend.mapper.UserMapper;
+import com.vibecoding.vibecoding_backend.util.UserConfigValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +24,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final UserConfigValidator userConfigValidator;
 
     /**
      * 通过邮箱查找用户
@@ -180,5 +182,76 @@ public class UserService {
         queryWrapper.eq("username", username);
         queryWrapper.eq("deleted", 0);
         return userMapper.selectCount(queryWrapper) > 0;
+    }
+
+    /**
+     * 更新用户配置（支持部分更新）
+     *
+     * @param userId 用户ID
+     * @param newConfig 新的配置信息（JSON字符串）
+     * @return 更新后的完整配置信息
+     */
+    public String updateUserConfig(Long userId, String newConfig) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        // 验证新配置信息
+        if (newConfig == null || newConfig.trim().isEmpty()) {
+            throw new RuntimeException("配置信息不能为空");
+        }
+        
+        // 使用配置验证器验证JSON格式和字段
+        UserConfigValidator.ValidationResult validationResult = userConfigValidator.validateConfig(newConfig);
+        if (!validationResult.isSuccess()) {
+            throw new RuntimeException("配置验证失败: " + validationResult.getMessage());
+        }
+        
+        try {
+            // 获取当前配置
+            String currentConfig = user.getConfig();
+            if (currentConfig == null || currentConfig.trim().isEmpty()) {
+                // 如果没有当前配置，使用默认配置
+                currentConfig = "{\"default_doc_type\":\"docx\"}";
+            }
+            
+            // 合并配置（部分更新）
+            String mergedConfig = userConfigValidator.mergeConfig(currentConfig, newConfig);
+            
+            user.setConfig(mergedConfig);
+            user.setUpdateTime(LocalDateTime.now());
+            userMapper.updateById(user);
+            log.info("更新用户配置: userId={}, newConfig={}, mergedConfig={}", userId, newConfig, mergedConfig);
+            return mergedConfig;
+        } catch (Exception e) {
+            log.error("更新用户配置失败: userId={}, config={}", userId, newConfig, e);
+            throw new RuntimeException("更新配置失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取用户配置
+     *
+     * @param userId 用户ID
+     * @return 配置信息（JSON字符串）
+     */
+    public String getUserConfig(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        // 如果配置为空，返回默认配置
+        if (user.getConfig() == null || user.getConfig().trim().isEmpty()) {
+            String defaultConfig = "{\"default_doc_type\":\"docx\"}";
+            user.setConfig(defaultConfig);
+            user.setUpdateTime(LocalDateTime.now());
+            userMapper.updateById(user);
+            log.info("设置用户默认配置: userId={}, config={}", userId, defaultConfig);
+            return defaultConfig;
+        }
+        
+        return user.getConfig();
     }
 } 
