@@ -5,9 +5,8 @@ import com.vibecoding.vibecoding_backend.aspect.ReportLogAspect;
 import com.vibecoding.vibecoding_backend.common.Result;
 import com.vibecoding.vibecoding_backend.dto.ResumeInfoResponse;
 import com.vibecoding.vibecoding_backend.dto.ResumeParseRequest;
-import com.vibecoding.vibecoding_backend.entity.FileInfo;
-import com.vibecoding.vibecoding_backend.mapper.FileInfoMapper;
 import com.vibecoding.vibecoding_backend.service.DifyService;
+import com.vibecoding.vibecoding_backend.service.ResumeHistoryService;
 import com.vibecoding.vibecoding_backend.util.ResumeGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +31,7 @@ public class ResumeController {
     private final DifyService difyService;
     private final ResumeGenerator resumeGenerator;
     private final ReportLogAspect reportLogAspect;
-    private final FileInfoMapper fileInfoMapper;
+    private final ResumeHistoryService resumeHistoryService;
     private final FileConfig fileConfig;
     
     /**
@@ -90,8 +89,9 @@ public class ResumeController {
             ResumeGenerator.ResumeGenerationResult result = resumeGenerator.generateResume(resumeInfo);
             
             result.setFilename(request.getFileName());
-            // 保存文件信息到数据库
-            saveFileInfoToDatabase(result, authentication);
+            
+            // 记录转换历史
+            recordResumeHistory(request, result, authentication.getName(), null);
 
             success = true;
             return Result.success("简历生成成功",request.getFileName());
@@ -99,6 +99,10 @@ public class ResumeController {
         } catch (Exception e) {
             log.error("简历生成失败", e);
             errorMessage = e.getMessage();
+            
+            // 记录转换失败历史
+            recordResumeHistory(request, null, authentication.getName(), e.getMessage());
+            
             return Result.error(500, "简历生成失败: " + e.getMessage());
         } finally {
             // 记录报表日志
@@ -107,31 +111,43 @@ public class ResumeController {
     }
     
     /**
-     * 保存文件信息到数据库
+     * 记录简历转换历史
      */
-    private void saveFileInfoToDatabase(ResumeGenerator.ResumeGenerationResult result, Authentication authentication) {
+    private void recordResumeHistory(ResumeParseRequest request, ResumeGenerator.ResumeGenerationResult result, String createdBy, String errorMessage) {
         try {
-            // 根据filename查找现有记录
-            FileInfo existingFile = fileInfoMapper.selectOne(
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<FileInfo>()
-                    .eq("filename", result.getFilename())
+            String sourceName = request.getFileName();
+            String sourceType = getFileTypeFromFileName(sourceName);
+            String sourcePath = fileConfig.buildDownloadUrl(fileConfig.getStoragePath(), sourceName);
+            String targetName = result != null ? result.getFilename() : null;
+            String targetType = request.getTargetFileType() != null ? request.getTargetFileType() : "word";
+            String targetLanguage = request.getTargetLanguage();
+            Integer translateStatus = result != null ? 1 : 0; // 1-成功，0-失败
+            
+            resumeHistoryService.recordHistory(
+                sourceName, sourceType, sourcePath,
+                targetName, targetType, targetLanguage,
+                translateStatus, createdBy, errorMessage
             );
-            
-            if (existingFile != null) {
-                // 更新现有记录
-                existingFile.setTargetPath(result.getTargetPath());
-                existingFile.setIsTranslated(1); // 已转换
-                
-                fileInfoMapper.updateById(existingFile);
-                log.info("文件信息已更新到数据库: {}", result.getFilename());
-            } else {
-                log.warn("未找到对应的文件记录: {}", result.getFilename());
-            }
-            
         } catch (Exception e) {
-            log.error("更新文件信息到数据库失败", e);
-            // 不抛出异常，避免影响简历生成流程
+            log.error("记录简历转换历史失败", e);
+            // 不抛出异常，避免影响主流程
         }
+    }
+    
+    /**
+     * 从文件名获取文件类型
+     */
+    private String getFileTypeFromFileName(String fileName) {
+        if (fileName == null || fileName.isEmpty()) {
+            return "unknown";
+        }
+        
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
+            return fileName.substring(lastDotIndex + 1).toLowerCase();
+        }
+        
+        return "unknown";
     }
 
 
