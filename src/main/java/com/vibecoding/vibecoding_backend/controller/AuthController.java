@@ -41,9 +41,9 @@ public class AuthController {
         boolean success = userService.sendVerificationCode(request.getEmail());
         
         if (success) {
-            return Result.<Void>success("验证码发送成功", null);
+            return Result.<Void>success("The verification code has been sent successfully.", null);
         } else {
-            return Result.<Void>error("验证码发送失败，请稍后重试");
+            return Result.<Void>error("Verification code sending failed, please try again later.");
         }
     }
 
@@ -57,7 +57,7 @@ public class AuthController {
         
         // 验证邮箱验证码
         if (!userService.verifyEmailCode(request.getEmail(), request.getVerificationCode())) {
-            return Result.error("验证码错误或已过期");
+            return Result.error("The verification code is incorrect or has expired.");
         }
         
         // 查找用户是否存在
@@ -105,6 +105,6 @@ public class AuthController {
         // JWT是无状态的，客户端删除token即可完成登出
         // 如果需要服务端控制，可以考虑将token加入黑名单
         
-        return Result.<Void>success("登出成功", null);
+        return Result.<Void>success("Logout successful", null);
     }
 }

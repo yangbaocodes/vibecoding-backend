@@ -1,0 +1,104 @@
+# Nginx 配置示例 - 针对长时间运行的API请求优化
+# 将此配置放在 /etc/nginx/sites-available/ 或相应的配置目录中
+
+server {
+    listen 80;
+    server_name your-domain.com;  # 替换为你的域名
+    
+    # 客户端请求体大小限制
+    client_max_body_size 100M;
+    
+    # 代理到后端Spring Boot应用
+    location /api/ {
+        proxy_pass http://localhost:8080;
+        
+        # 关键超时设置 - 解决504错误
+        proxy_connect_timeout 60s;        # 连接超时60秒
+        proxy_send_timeout 600s;          # 发送超时10分钟
+        proxy_read_timeout 600s;          # 读取超时10分钟 - 这是关键设置
+        
+        # 缓冲设置
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
+        proxy_busy_buffers_size 8k;
+        
+        # 头部设置
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # 错误处理
+        proxy_intercept_errors on;
+        error_page 504 /504.html;
+        
+        # 日志设置
+        access_log /var/log/nginx/api_access.log;
+        error_log /var/log/nginx/api_error.log;
+    }
+    
+    # 静态文件服务（如果需要）
+    location /static/ {
+        alias /path/to/your/static/files/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    # 健康检查端点
+    location /health {
+        proxy_pass http://localhost:8080/api/health;
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 5s;
+        proxy_read_timeout 5s;
+    }
+    
+    # 自定义504错误页面
+    location = /504.html {
+        root /var/www/html;
+        internal;
+    }
+}
+
+# 全局设置
+http {
+    # 基础设置
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    
+    # Gzip压缩
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/json
+        application/javascript
+        application/xml+rss
+        application/atom+xml
+        image/svg+xml;
+    
+    # 日志格式
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+    
+    # 包含其他配置文件
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+}
+
+# 事件模块设置
+events {
+    worker_connections 1024;
+    use epoll;
+    multi_accept on;
+}
