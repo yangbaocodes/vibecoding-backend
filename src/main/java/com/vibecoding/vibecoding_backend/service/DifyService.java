@@ -111,6 +111,11 @@ public class DifyService {
             
             log.info("解析出的文本内容: {}", textContent);
             
+            if(textContent == null || textContent.isEmpty()){
+                log.error("解析出的文本内容为空");
+                String errorMessage = (String) data.get("error");
+                throw new RuntimeException(errorMessage);
+            }
             // 解析文本内容为ResumeInfoResponse
             ResumeInfoResponse response = objectMapper.readValue(textContent, ResumeInfoResponse.class);
 
